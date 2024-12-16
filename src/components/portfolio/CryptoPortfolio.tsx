@@ -7,22 +7,20 @@ import { PortfolioHeader } from "./PortfolioHeader";
 import { AddCoinForm } from "./AddCoinForm";
 import { CoinList } from "./CoinList";
 
-interface CoinData {
+interface CoinHolding {
   id: string;
   symbol: string;
-  amount: string;
-  buyPrice: string;
-  currentPrice?: number;
-  profitLoss?: number;
+  amount: number;
+  buyPrice: number;
 }
 
 export const CryptoPortfolio = () => {
-  const [portfolio, setPortfolio] = useState<CoinData[]>(() => {
-    const saved = localStorage.getItem("portfolio");
+  const [holdings, setHoldings] = useState<CoinHolding[]>(() => {
+    const saved = localStorage.getItem("cryptoHoldings");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [newCoin, setNewCoin] = useState<Omit<CoinData, 'id'>>({
+  const [newCoin, setNewCoin] = useState({
     symbol: "",
     amount: "",
     buyPrice: ""
@@ -34,22 +32,28 @@ export const CryptoPortfolio = () => {
       return;
     }
 
-    const coin: CoinData = {
-      ...newCoin,
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const coin: CoinHolding = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      symbol: newCoin.symbol.toLowerCase(),
+      amount: parseFloat(newCoin.amount),
+      buyPrice: parseFloat(newCoin.buyPrice)
     };
 
-    const updatedPortfolio = [...portfolio, coin];
-    setPortfolio(updatedPortfolio);
-    localStorage.setItem("portfolio", JSON.stringify(updatedPortfolio));
+    setHoldings(prev => {
+      const updated = [...prev, coin];
+      localStorage.setItem("cryptoHoldings", JSON.stringify(updated));
+      return updated;
+    });
     setNewCoin({ symbol: "", amount: "", buyPrice: "" });
     toast.success("Coin added to portfolio!");
   };
 
   const handleRemoveCoin = (id: string) => {
-    const updatedPortfolio = portfolio.filter(coin => coin.id !== id);
-    setPortfolio(updatedPortfolio);
-    localStorage.setItem("portfolio", JSON.stringify(updatedPortfolio));
+    setHoldings(prev => {
+      const updated = prev.filter(coin => coin.id !== id);
+      localStorage.setItem("cryptoHoldings", JSON.stringify(updated));
+      return updated;
+    });
     toast.success("Coin removed from portfolio!");
   };
 
@@ -78,7 +82,8 @@ export const CryptoPortfolio = () => {
                 onAddCoin={handleAddCoin}
               />
               <CoinList
-                portfolio={portfolio}
+                portfolio={holdings}
+                prices={{}}
                 onRemoveCoin={handleRemoveCoin}
               />
             </CardContent>
