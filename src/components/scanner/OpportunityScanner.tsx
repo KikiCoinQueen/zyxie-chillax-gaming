@@ -1,40 +1,10 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Search, TrendingUp, Volume2, Users, AlertTriangle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Search, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { formatMarketCap, formatPercentage } from "@/utils/formatters";
-
-interface OpportunityScore {
-  volumeScore: number;
-  socialScore: number;
-  priceScore: number;
-  total: number;
-}
-
-const calculateOpportunityScore = (
-  volume24h: string,
-  priceChange24h: number,
-  fdv: number
-): OpportunityScore => {
-  // Volume score (0-5): Higher volume is better
-  const volumeScore = Math.min(parseFloat(volume24h) / 100000, 5);
-  
-  // Price momentum score (0-5): Based on 24h change
-  const priceScore = Math.min(Math.abs(priceChange24h) / 10, 5);
-  
-  // Social/Market score (0-5): Lower FDV suggests more room for growth
-  const socialScore = Math.min((10000000 - fdv) / 1000000, 5);
-  
-  return {
-    volumeScore,
-    socialScore,
-    priceScore,
-    total: (volumeScore + socialScore + priceScore) / 3
-  };
-};
+import { OpportunityCard } from "./OpportunityCard";
+import { calculateOpportunityScore } from "./utils/scoring";
+import { TokenOpportunity } from "./types";
 
 export const OpportunityScanner = () => {
   const { data: tokens, isLoading } = useQuery({
@@ -68,14 +38,22 @@ export const OpportunityScanner = () => {
             return !isNaN(fdv) && !isNaN(volume) && fdv < 5000000 && volume > 1000;
           })
           .map((pair: any) => ({
-            ...pair,
+            baseToken: {
+              address: pair.baseToken.address,
+              symbol: pair.baseToken.symbol,
+            },
+            priceChange24h: parseFloat(pair.priceChange24h),
+            volume24h: pair.volume24h,
+            fdv: parseFloat(pair.fdv),
             opportunityScore: calculateOpportunityScore(
               pair.volume24h,
               parseFloat(pair.priceChange24h),
               parseFloat(pair.fdv)
             )
           }))
-          .sort((a: any, b: any) => b.opportunityScore.total - a.opportunityScore.total)
+          .sort((a: TokenOpportunity, b: TokenOpportunity) => 
+            b.opportunityScore.total - a.opportunityScore.total
+          )
           .slice(0, 5);
       } catch (error) {
         console.error("Error fetching opportunities:", error);
@@ -113,98 +91,8 @@ export const OpportunityScanner = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tokens?.map((token: any) => (
-                <motion.div
-                  key={token.baseToken.address}
-                  whileHover={{ scale: 1.02 }}
-                  className="glass-card rounded-xl overflow-hidden"
-                >
-                  <Card className="border-0 bg-transparent h-full">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {token.baseToken.symbol}
-                          <Badge variant="secondary" className="text-xs">
-                            {token.opportunityScore.total.toFixed(1)}/5
-                          </Badge>
-                        </div>
-                        <span className={`text-sm ${
-                          token.priceChange24h >= 0 ? 'text-green-500' : 'text-red-500'
-                        }`}>
-                          {formatPercentage(token.priceChange24h)}
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-1">
-                              <Volume2 className="w-4 h-4" />
-                              Volume Score
-                            </span>
-                            <span className="font-mono">
-                              {token.opportunityScore.volumeScore.toFixed(1)}/5
-                            </span>
-                          </div>
-                          <Progress 
-                            value={token.opportunityScore.volumeScore * 20} 
-                            className="h-1.5"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-1">
-                              <TrendingUp className="w-4 h-4" />
-                              Price Score
-                            </span>
-                            <span className="font-mono">
-                              {token.opportunityScore.priceScore.toFixed(1)}/5
-                            </span>
-                          </div>
-                          <Progress 
-                            value={token.opportunityScore.priceScore * 20} 
-                            className="h-1.5"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              Growth Potential
-                            </span>
-                            <span className="font-mono">
-                              {token.opportunityScore.socialScore.toFixed(1)}/5
-                            </span>
-                          </div>
-                          <Progress 
-                            value={token.opportunityScore.socialScore * 20} 
-                            className="h-1.5"
-                          />
-                        </div>
-
-                        <div className="pt-4 border-t border-border/50">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground">24h Volume</p>
-                              <p className="font-mono text-sm">
-                                {formatMarketCap(parseFloat(token.volume24h))}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">FDV</p>
-                              <p className="font-mono text-sm">
-                                {formatMarketCap(parseFloat(token.fdv))}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+              {tokens?.map((token: TokenOpportunity) => (
+                <OpportunityCard key={token.baseToken.address} token={token} />
               ))}
             </div>
           )}
