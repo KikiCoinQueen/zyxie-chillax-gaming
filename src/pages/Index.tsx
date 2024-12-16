@@ -6,6 +6,7 @@ import { ContactForm } from "@/components/ContactForm";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { CryptoSection } from "@/components/CryptoSection";
 import { CryptoMarket } from "@/components/CryptoMarket";
+import { CryptoPriceChart } from "@/components/CryptoPriceChart";
 
 const Index = () => {
   return (
@@ -13,6 +14,7 @@ const Index = () => {
       <Hero />
       <About />
       <CryptoMarket />
+      <CryptoPriceChart />
       <CryptoSection />
       <BlogPreview />
       <SocialLinks />
