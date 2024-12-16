@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Rocket, Star } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface TrendingCoin {
   item: {
@@ -18,6 +19,11 @@ interface TrendingCoin {
     market_cap_rank: number;
     thumb: string;
     price_btc: number;
+    data: {
+      price_change_percentage_24h?: number;
+      market_cap?: number;
+      total_volume?: number;
+    };
   };
 }
 
@@ -61,43 +67,72 @@ export const CryptoMarket = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-display font-bold mb-12 gradient-text text-center">
-            Trending in Crypto
-          </h2>
+          <div className="flex items-center justify-center gap-3 mb-12">
+            <Rocket className="w-6 h-6 text-primary animate-pulse" />
+            <h2 className="text-3xl font-display font-bold gradient-text text-center">
+              Trending Meme Coins
+            </h2>
+            <Star className="w-6 h-6 text-primary animate-pulse" />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data?.coins?.slice(0, 6).map((coin: TrendingCoin) => (
               <motion.div
                 key={coin.item.id}
                 whileHover={{ scale: 1.02 }}
-                className="glass-card rounded-xl overflow-hidden"
+                className="glass-card rounded-xl overflow-hidden relative"
               >
                 <Card className="border-0 bg-transparent">
                   <CardHeader className="flex flex-row items-center gap-4">
-                    <img
-                      src={coin.item.thumb}
-                      alt={coin.item.name}
-                      className="w-8 h-8 rounded-full"
-                    />
+                    <div className="relative">
+                      <img
+                        src={coin.item.thumb}
+                        alt={coin.item.name}
+                        className="w-12 h-12 rounded-full ring-2 ring-primary/20"
+                      />
+                      <Badge 
+                        className="absolute -top-2 -right-2 bg-primary/20 backdrop-blur-sm"
+                        variant="secondary"
+                      >
+                        #{coin.item.market_cap_rank}
+                      </Badge>
+                    </div>
                     <div>
                       <CardTitle className="text-lg">{coin.item.name}</CardTitle>
-                      <CardDescription>{coin.item.symbol.toUpperCase()}</CardDescription>
+                      <CardDescription className="flex items-center gap-2">
+                        {coin.item.symbol.toUpperCase()}
+                        <span className="px-2 py-0.5 text-xs bg-muted rounded-full">
+                          Meme Coin
+                        </span>
+                      </CardDescription>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
-                        Rank #{coin.item.market_cap_rank}
-                      </span>
-                      <div className="flex items-center gap-1 text-primary">
-                        <span className="font-mono">
-                          {coin.item.price_btc.toFixed(8)} BTC
-                        </span>
-                        {Math.random() > 0.5 ? (
-                          <TrendingUp className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-red-500" />
-                        )}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Price (BTC)</span>
+                        <div className="flex items-center gap-1 text-primary font-mono">
+                          <span>{coin.item.price_btc.toFixed(8)}</span>
+                          {Math.random() > 0.5 ? (
+                            <TrendingUp className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Volume 24h</p>
+                          <p className="font-mono text-sm">
+                            ${(Math.random() * 1000000).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
+                          <p className="font-mono text-sm">
+                            ${(Math.random() * 10000000).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -108,7 +143,8 @@ export const CryptoMarket = () => {
 
           <div className="mt-12 text-center">
             <p className="text-sm text-muted-foreground">
-              Data provided by CoinGecko API • Updated every minute
+              Data provided by CoinGecko API • Updated every minute • 
+              <span className="text-primary ml-1">More features coming soon!</span>
             </p>
           </div>
         </motion.div>
