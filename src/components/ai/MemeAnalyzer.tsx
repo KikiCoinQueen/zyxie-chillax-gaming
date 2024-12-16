@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { pipeline } from "@huggingface/transformers";
 import { AnalysisHeader } from "./analysis/AnalysisHeader";
 import { AnalysisProgress } from "./analysis/AnalysisProgress";
-import { AnalysisResult, extractSentiment } from "./analysis/types";
+import { AnalysisResult, TextClassificationOutput, extractSentiment } from "./analysis/types";
 
 export const MemeAnalyzer = () => {
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
@@ -28,7 +28,7 @@ export const MemeAnalyzer = () => {
 
         const results: AnalysisResult[] = await Promise.all(
           selectedTokens.map(async (token) => {
-            const result = await classifier(`${token} market analysis`);
+            const result = await classifier(`${token} market analysis`) as TextClassificationOutput;
             const sentiment = extractSentiment(result);
 
             return {
