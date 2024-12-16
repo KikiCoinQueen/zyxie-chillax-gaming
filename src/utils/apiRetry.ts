@@ -18,10 +18,12 @@ export const withRetry = async <T>(
       return await fn();
     } catch (error) {
       lastError = error as Error;
+      console.error(`Attempt ${attempt} failed:`, error);
+      
       if (attempt === maxAttempts) break;
 
       const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
-      console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
+      console.log(`Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -41,9 +43,16 @@ export const createFallbackChain = async <T>(
 
   try {
     return await withRetry(primaryFn, retryConfig);
-  } catch (error) {
-    console.error("Primary API failed, switching to fallback:", error);
+  } catch (primaryError) {
+    console.error("Primary API failed, switching to fallback:", primaryError);
     onFallback?.();
-    return await withRetry(fallbackFn, retryConfig);
+    
+    try {
+      return await withRetry(fallbackFn, retryConfig);
+    } catch (fallbackError) {
+      console.error("Fallback API also failed:", fallbackError);
+      toast.error("Unable to fetch data from any source. Please try again later.");
+      throw fallbackError;
+    }
   }
 };
