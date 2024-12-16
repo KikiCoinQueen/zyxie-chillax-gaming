@@ -13,18 +13,13 @@ export interface TextClassificationSingle {
 
 export type TextClassificationOutput = TextClassificationSingle | TextClassificationSingle[];
 
-// Type guard to check if the result is an array
 export function isClassificationArray(result: TextClassificationOutput): result is TextClassificationSingle[] {
   return Array.isArray(result);
 }
 
 export function extractSentiment(result: TextClassificationOutput): TextClassificationSingle {
   if (isClassificationArray(result)) {
-    const firstResult = result[0];
-    return {
-      label: firstResult?.label || "NEUTRAL",
-      score: firstResult?.score || 0.5
-    };
+    return result[0] || { label: "NEUTRAL", score: 0.5 };
   }
   return result;
 }

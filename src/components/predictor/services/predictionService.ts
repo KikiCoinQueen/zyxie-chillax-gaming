@@ -1,5 +1,5 @@
 import { pipeline } from "@huggingface/transformers";
-import { Prediction, extractSentiment } from "../types/prediction";
+import { Prediction, TextClassificationOutput, extractSentiment } from "../types/prediction";
 import { toast } from "sonner";
 
 export async function generatePrediction(token: any): Promise<Prediction> {
