@@ -20,32 +20,46 @@ export const MemeAnalyzer = () => {
     queryKey: ["memeAnalysis", selectedTokens],
     queryFn: async () => {
       try {
+        // Using a public model that doesn't require authentication
         const classifier = await pipeline(
           "text-classification",
-          "onnx-community/distilbert-base-uncased-finetuned-sst-2-english",
+          "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
           { device: "webgpu" }
         );
 
         const results: AnalysisResult[] = await Promise.all(
           selectedTokens.map(async (token) => {
-            const result = await classifier(`${token} market analysis`) as TextClassificationOutput;
-            const sentiment = extractSentiment(result);
+            try {
+              const result = await classifier(`${token} market analysis`) as TextClassificationOutput;
+              const sentiment = extractSentiment(result);
 
-            return {
-              symbol: token,
-              sentiment: sentiment.score * 100,
-              riskScore: Math.random() * 5,
-              socialScore: Math.random() * 5,
-              prediction: sentiment.score > 0.6 ? "Bullish 🚀" : "Bearish 🐻",
-              confidence: sentiment.score * 100
-            };
+              return {
+                symbol: token,
+                sentiment: sentiment.score * 100,
+                riskScore: Math.random() * 5,
+                socialScore: Math.random() * 5,
+                prediction: sentiment.score > 0.6 ? "Bullish 🚀" : "Bearish 🐻",
+                confidence: sentiment.score * 100
+              };
+            } catch (error) {
+              console.error(`Error analyzing token ${token}:`, error);
+              toast.error(`Failed to analyze ${token}`);
+              return {
+                symbol: token,
+                sentiment: 50,
+                riskScore: 2.5,
+                socialScore: 2.5,
+                prediction: "Neutral 😐",
+                confidence: 50
+              };
+            }
           })
         );
 
         return results;
       } catch (error) {
         console.error("Analysis error:", error);
-        toast.error("Failed to analyze tokens");
+        toast.error("Failed to initialize AI model. Please try again later.");
         return [];
       }
     },
