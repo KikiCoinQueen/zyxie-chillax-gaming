@@ -4,7 +4,10 @@ import { Gamepad, Bitcoin } from "lucide-react";
 export const Hero = () => {
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden py-20 px-4">
-      <div className="absolute inset-0 bg-[url('/placeholder.svg')] bg-cover bg-center opacity-20" />
+      <div 
+        className="absolute inset-0 bg-[url('/th_(1).jpeg')] bg-cover bg-center opacity-20"
+        style={{ backgroundPosition: "center 20%" }}
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/80 to-background" />
       
       <motion.div 
@@ -13,6 +16,13 @@ export const Hero = () => {
         transition={{ duration: 0.8 }}
         className="container relative z-10 text-center"
       >
+        <div className="w-32 h-32 mx-auto mb-8 rounded-full overflow-hidden border-4 border-primary">
+          <img 
+            src="/image_(1).jpg" 
+            alt="Zyxie"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 gradient-text neon-glow">
           Zyxie Arcadia
         </h1>
