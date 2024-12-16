@@ -9,6 +9,7 @@ import { TokenMetrics } from "./tokens/TokenMetrics";
 import { SearchBar } from "./search/SearchBar";
 import { useAchievements } from "@/contexts/AchievementsContext";
 import { pipeline } from "@huggingface/transformers";
+import { extractSentiment } from "@/components/predictor/types/prediction";
 
 export const TokenDiscovery = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,12 +44,17 @@ export const TokenDiscovery = () => {
                           by ${Math.abs(pair.priceChange24h)}% with volume ${pair.volume24h}`;
               
               const sentiment = await classifier(text);
-              const score = Array.isArray(sentiment) ? sentiment[0].score : sentiment.score;
+              const { score } = extractSentiment(sentiment);
               
               return {
-                ...pair,
-                sentiment: score,
-                riskScore: calculateRiskScore(pair)
+                symbol: pair.baseToken.symbol,
+                name: pair.baseToken.name,
+                price: parseFloat(pair.priceUsd),
+                volume24h: parseFloat(pair.volume24h),
+                marketCap: pair.fdv || 0,
+                riskLevel: calculateRiskScore(pair),
+                potentialScore: score * 5,
+                communityScore: Math.random() * 5
               };
             })
         );
@@ -77,16 +83,16 @@ export const TokenDiscovery = () => {
   };
 
   const filteredTokens = tokens?.filter(token => {
-    const matchesSearch = token.baseToken.symbol.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRisk = selectedRisk === null || token.riskScore === selectedRisk;
+    const matchesSearch = token.symbol.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRisk = selectedRisk === null || token.riskLevel === selectedRisk;
     return matchesSearch && matchesRisk;
   });
 
   const analyzeToken = async (token: any) => {
     setIsAnalyzing(true);
     try {
-      addAnalyzedToken(token.baseToken.symbol);
-      toast.success(`Analysis completed for ${token.baseToken.symbol}!`);
+      addAnalyzedToken(token.symbol);
+      toast.success(`Analysis completed for ${token.symbol}!`);
     } catch (error) {
       console.error("Error analyzing token:", error);
       toast.error("Failed to analyze token");
@@ -133,12 +139,12 @@ export const TokenDiscovery = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTokens?.map((token: any) => (
-                <Card key={token.baseToken.address} className="glass-card hover:scale-[1.02] transition-transform">
+              {filteredTokens?.map((token) => (
+                <Card key={token.symbol} className="glass-card hover:scale-[1.02] transition-transform">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        {token.baseToken.symbol}
+                        {token.symbol}
                         <TrendingUp className="w-4 h-4 text-primary" />
                       </div>
                       <Button
@@ -151,7 +157,7 @@ export const TokenDiscovery = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <TokenMetrics token={token} />
+                    <TokenMetrics {...token} />
                   </CardContent>
                 </Card>
               ))}
