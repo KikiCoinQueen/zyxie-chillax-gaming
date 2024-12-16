@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, Rocket, Star, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, Rocket, Star, ExternalLink, Volume2, Users, AlertTriangle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -16,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 interface TrendingCoin {
   item: {
@@ -30,6 +31,8 @@ interface TrendingCoin {
       price_change_percentage_24h?: number;
       market_cap?: number;
       total_volume?: number;
+      sentiment_votes_up_percentage?: number;
+      community_score?: number;
     };
   };
 }
@@ -54,6 +57,29 @@ export const CryptoMarket = () => {
       return 'N/A';
     }
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+  };
+
+  const formatMarketCap = (value: number | undefined): string => {
+    if (!value) return 'N/A';
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
+  };
+
+  const getSentimentColor = (sentiment?: number): string => {
+    if (!sentiment) return 'text-muted-foreground';
+    if (sentiment >= 70) return 'text-green-500';
+    if (sentiment >= 40) return 'text-yellow-500';
+    return 'text-red-500';
+  };
+
+  const getCommunityScore = (score?: number): string => {
+    if (!score) return 'Low';
+    if (score >= 80) return 'Very High';
+    if (score >= 60) return 'High';
+    if (score >= 40) return 'Medium';
+    return 'Low';
   };
 
   if (isLoading) {
@@ -155,6 +181,43 @@ export const CryptoMarket = () => {
                           ) : null}
                         </div>
                       </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1">
+                            <Volume2 className="w-4 h-4" />
+                            Volume 24h
+                          </span>
+                          <span className="font-mono">
+                            {formatMarketCap(coin.item.data?.total_volume)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            Community Score
+                          </span>
+                          <span className={`font-medium ${getSentimentColor(coin.item.data?.community_score)}`}>
+                            {getCommunityScore(coin.item.data?.community_score)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-1">
+                              <AlertTriangle className="w-4 h-4" />
+                              Risk Level
+                            </span>
+                            <span className="text-yellow-500 font-medium">High</span>
+                          </div>
+                          <Progress 
+                            value={75} 
+                            className="h-1.5 bg-muted"
+                          />
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">24h Change</p>
@@ -170,9 +233,7 @@ export const CryptoMarket = () => {
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
                           <p className="font-mono text-sm">
-                            ${coin.item.data?.market_cap 
-                              ? (coin.item.data.market_cap / 1000000).toFixed(2) + 'M'
-                              : 'N/A'}
+                            {formatMarketCap(coin.item.data?.market_cap)}
                           </p>
                         </div>
                       </div>
