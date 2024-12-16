@@ -11,19 +11,31 @@ import { TokenInsight } from "./types";
 export const MemeInsights = () => {
   const [timeframe] = useState("24h");
 
-  const { data: insights, isLoading } = useQuery({
+  const { data: insights, isLoading, error, refetch } = useQuery({
     queryKey: ["memeInsights", timeframe],
     queryFn: async () => {
       try {
+        console.log("Fetching meme insights...");
         const response = await fetch(
-          "https://api.dexscreener.com/latest/dex/tokens/SOL"
+          "https://api.dexscreener.com/latest/dex/tokens/SOL",
+          {
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          }
         );
-        if (!response.ok) throw new Error("Failed to fetch token data");
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log("Meme insights API response:", data);
         
         if (!data?.pairs) {
           console.log("No pairs data received:", data);
-          return [];
+          throw new Error("No pairs data available");
         }
         
         return data.pairs
@@ -42,9 +54,16 @@ export const MemeInsights = () => {
       }
     },
     refetchInterval: 30000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     meta: {
       onError: () => {
-        toast.error("Failed to fetch market insights");
+        toast.error("Failed to fetch market insights. Retrying...", {
+          action: {
+            label: "Retry",
+            onClick: () => refetch()
+          }
+        });
       }
     }
   });
@@ -68,6 +87,16 @@ export const MemeInsights = () => {
           {isLoading ? (
             <div className="flex justify-center items-center min-h-[400px]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-10">
+              <p className="text-red-500 mb-4">Failed to load market insights</p>
+              <button 
+                onClick={() => refetch()}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Try Again
+              </button>
             </div>
           ) : (
             <div className="space-y-6">

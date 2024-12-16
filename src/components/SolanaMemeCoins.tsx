@@ -25,20 +25,30 @@ interface TokenData {
 export const SolanaMemeCoins = () => {
   const [timeframe] = useState("24h");
 
-  const { data: tokens, isLoading, error } = useQuery({
+  const { data: tokens, isLoading, error, refetch } = useQuery({
     queryKey: ["solanaMemeCoins", timeframe],
     queryFn: async () => {
       try {
         const response = await fetch(
-          "https://api.dexscreener.com/latest/dex/tokens/SOL"
+          "https://api.dexscreener.com/latest/dex/tokens/SOL",
+          {
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          }
         );
-        if (!response.ok) throw new Error("Failed to fetch token data");
-        const data = await response.json();
         
-        // Ensure data.pairs exists before filtering
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("DexScreener API Response:", data);
+        
         if (!data?.pairs) {
           console.log("No pairs data received:", data);
-          return [];
+          throw new Error("No pairs data available");
         }
         
         // Filter and sort potential meme coins
@@ -58,9 +68,16 @@ export const SolanaMemeCoins = () => {
       }
     },
     refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 3, // Retry failed requests 3 times
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     meta: {
       onError: () => {
-        toast.error("Failed to fetch Solana meme coins data. Please try again later.");
+        toast.error("Failed to fetch Solana meme coins data. Retrying...", {
+          action: {
+            label: "Retry",
+            onClick: () => refetch()
+          }
+        });
       }
     }
   });
@@ -69,7 +86,12 @@ export const SolanaMemeCoins = () => {
     return (
       <div className="text-center text-red-500 py-20">
         <p className="text-lg">Failed to load Solana meme coins.</p>
-        <p className="text-sm mt-2">Please try again later or check your connection.</p>
+        <button 
+          onClick={() => refetch()}
+          className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

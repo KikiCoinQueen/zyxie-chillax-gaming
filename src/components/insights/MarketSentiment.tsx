@@ -12,17 +12,32 @@ interface SentimentData {
 }
 
 export const MarketSentiment = () => {
-  const { data: sentimentData, isLoading } = useQuery({
+  const { data: sentimentData, isLoading, error, refetch } = useQuery({
     queryKey: ["marketSentiment"],
     queryFn: async () => {
       try {
+        console.log("Fetching market sentiment data...");
         const response = await fetch(
-          "https://api.dexscreener.com/latest/dex/tokens/SOL"
+          "https://api.dexscreener.com/latest/dex/tokens/SOL",
+          {
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          }
         );
-        if (!response.ok) throw new Error("Failed to fetch market data");
-        const data = await response.json();
         
-        if (!data?.pairs) return [];
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("Market sentiment API response:", data);
+        
+        if (!data?.pairs) {
+          console.log("No pairs data received:", data);
+          throw new Error("No pairs data available");
+        }
         
         return data.pairs
           .filter((pair: any) => parseFloat(pair.volume24h) > 1000)
@@ -40,9 +55,16 @@ export const MarketSentiment = () => {
       }
     },
     refetchInterval: 30000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     meta: {
       onError: () => {
-        toast.error("Failed to fetch market sentiment");
+        toast.error("Failed to fetch market sentiment. Retrying...", {
+          action: {
+            label: "Retry",
+            onClick: () => refetch()
+          }
+        });
       }
     }
   });
