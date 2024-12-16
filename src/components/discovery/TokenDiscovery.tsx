@@ -11,8 +11,7 @@ import { useAchievements } from "@/contexts/AchievementsContext";
 import { pipeline } from "@huggingface/transformers";
 import { 
   extractSentiment, 
-  TextClassificationSingle, 
-  TextClassificationOutput 
+  TextClassificationSingle
 } from "@/components/predictor/types/prediction";
 
 interface AnalyzedToken {
@@ -58,8 +57,8 @@ export const TokenDiscovery = () => {
               const text = `${pair.baseToken.symbol} price ${pair.priceChange24h > 0 ? 'increased' : 'decreased'} 
                           by ${Math.abs(pair.priceChange24h)}% with volume ${pair.volume24h}`;
               
-              const sentimentResult = await classifier(text) as TextClassificationOutput;
-              const sentiment = extractSentiment(sentimentResult);
+              const result = await classifier(text);
+              const sentiment = extractSentiment(result);
               
               return {
                 symbol: pair.baseToken.symbol,
