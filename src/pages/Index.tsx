@@ -5,12 +5,14 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { ContactForm } from "@/components/ContactForm";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { CryptoSection } from "@/components/CryptoSection";
+import { CryptoMarket } from "@/components/CryptoMarket";
 
 const Index = () => {
   return (
     <main className="min-h-screen">
       <Hero />
       <About />
+      <CryptoMarket />
       <CryptoSection />
       <BlogPreview />
       <SocialLinks />
