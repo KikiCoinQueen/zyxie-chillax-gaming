@@ -1,7 +1,14 @@
 import { motion } from "framer-motion";
 import { Gamepad, Bitcoin } from "lucide-react";
+import { toast } from "sonner";
 
 export const Hero = () => {
+  const handleAdventureClick = () => {
+    toast.success("Welcome to the adventure! 🎮", {
+      description: "Get ready for an epic journey of gaming and crypto!",
+    });
+  };
+
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden py-20 px-4">
       <div 
@@ -43,7 +50,8 @@ export const Hero = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-medium"
+          onClick={handleAdventureClick}
+          className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-medium hover:shadow-lg hover:shadow-primary/25 transition-shadow duration-300"
         >
           Join the Adventure
         </motion.button>
