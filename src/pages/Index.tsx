@@ -19,12 +19,14 @@ import { CryptoPulse } from "@/components/pulse/CryptoPulse";
 import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 import { MemePredictor } from "@/components/predictor/MemePredictor";
+import { MemeAnalyzer } from "@/components/ai/MemeAnalyzer";
 
 const Index = () => {
   return (
     <main className="min-h-screen">
       <Hero />
       <About />
+      <MemeAnalyzer />
       <MemePredictor />
       <TokenAnalyzer />
       <MemeDiscovery />
