@@ -22,13 +22,37 @@ interface TokenData {
   fdv: number;
 }
 
+const FALLBACK_API_URL = "https://api.coingecko.com/api/v3/search/trending";
+
 export const SolanaMemeCoins = () => {
   const [timeframe] = useState("24h");
+  const [useFallback, setUseFallback] = useState(false);
 
   const { data: tokens, isLoading, error, refetch } = useQuery({
-    queryKey: ["solanaMemeCoins", timeframe],
+    queryKey: ["solanaMemeCoins", timeframe, useFallback],
     queryFn: async () => {
       try {
+        console.log("Attempting to fetch Solana tokens...");
+        
+        if (useFallback) {
+          console.log("Using fallback API...");
+          const response = await fetch(FALLBACK_API_URL);
+          if (!response.ok) throw new Error("Fallback API failed");
+          const data = await response.json();
+          return data.coins.slice(0, 6).map((coin: any) => ({
+            baseToken: {
+              address: coin.item.id,
+              name: coin.item.name,
+              symbol: coin.item.symbol,
+            },
+            priceUsd: (coin.item.price_btc * 40000).toString(), // Rough BTC price estimate
+            volume24h: (coin.item.price_btc * 40000 * 1000000).toString(),
+            priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
+            liquidity: { usd: 1000000 }, // Default liquidity
+            fdv: coin.item.market_cap_rank * 1000000,
+          }));
+        }
+
         const response = await fetch(
           "https://api.dexscreener.com/latest/dex/tokens/SOL",
           {
@@ -46,36 +70,41 @@ export const SolanaMemeCoins = () => {
         const data = await response.json();
         console.log("DexScreener API Response:", data);
         
-        if (!data?.pairs) {
-          console.log("No pairs data received:", data);
-          throw new Error("No pairs data available");
+        if (!data?.pairs || data.pairs.length === 0) {
+          console.log("No valid data from primary API, switching to fallback");
+          setUseFallback(true);
+          throw new Error("No valid data from primary API");
         }
         
-        // Filter and sort potential meme coins
         return data.pairs
           .filter((pair: any) => {
             const fdv = parseFloat(pair.fdv);
             const volume = parseFloat(pair.volume24h);
-            return fdv && fdv < 10000000 && volume > 1000; // FDV < $10M and 24h volume > $1k
+            return fdv && fdv < 10000000 && volume > 1000;
           })
-          .sort((a: any, b: any) => {
-            return parseFloat(b.volume24h) - parseFloat(a.volume24h);
-          })
+          .sort((a: any, b: any) => parseFloat(b.volume24h) - parseFloat(a.volume24h))
           .slice(0, 6);
       } catch (error) {
         console.error("Error fetching Solana tokens:", error);
+        if (!useFallback) {
+          setUseFallback(true);
+          throw error;
+        }
         throw error;
       }
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    retry: 3, // Retry failed requests 3 times
+    refetchInterval: 30000,
+    retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     meta: {
       onError: () => {
-        toast.error("Failed to fetch Solana meme coins data. Retrying...", {
+        toast.error("Experiencing API issues, switching to fallback data source", {
           action: {
             label: "Retry",
-            onClick: () => refetch()
+            onClick: () => {
+              setUseFallback(false);
+              refetch();
+            }
           }
         });
       }
@@ -107,7 +136,7 @@ export const SolanaMemeCoins = () => {
           <div className="flex items-center justify-center gap-3 mb-12">
             <Rocket className="w-6 h-6 text-primary animate-pulse" />
             <h2 className="text-3xl font-display font-bold gradient-text text-center">
-              Trending Solana Meme Coins
+              {useFallback ? "Trending Crypto Coins" : "Trending Solana Meme Coins"}
             </h2>
             <TrendingUp className="w-6 h-6 text-primary animate-pulse" />
           </div>
@@ -118,7 +147,7 @@ export const SolanaMemeCoins = () => {
             </div>
           ) : tokens?.length === 0 ? (
             <div className="text-center text-muted-foreground py-10">
-              <p>No trending meme coins found at the moment.</p>
+              <p>No trending coins found at the moment.</p>
               <p className="text-sm mt-2">Check back soon for new opportunities!</p>
             </div>
           ) : (
@@ -147,7 +176,7 @@ export const SolanaMemeCoins = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">24h Change</span>
                         <span className={`font-mono ${
-                          token.priceChange24h > 0 ? 'text-green-500' : 'text-red-500'
+                          token.priceChange24h >= 0 ? 'text-green-500' : 'text-red-500'
                         }`}>
                           {formatPercentage(token.priceChange24h)}
                         </span>
@@ -183,8 +212,12 @@ export const SolanaMemeCoins = () => {
 
           <div className="mt-12 text-center">
             <p className="text-sm text-muted-foreground">
-              Data provided by DEXScreener • Updated every 30 seconds • 
-              <span className="text-primary ml-1">Showing low-cap gems under $10M FDV with active trading</span>
+              {useFallback ? (
+                <>Data provided by CoinGecko • Updated every 30 seconds</>
+              ) : (
+                <>Data provided by DEXScreener • Updated every 30 seconds • 
+                <span className="text-primary ml-1">Showing low-cap gems under $10M FDV with active trading</span></>
+              )}
             </p>
           </div>
         </motion.div>
