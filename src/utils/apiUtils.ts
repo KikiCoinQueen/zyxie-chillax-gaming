@@ -7,7 +7,12 @@ const DEX_SCREENER_API_URL = "https://api.dexscreener.com/latest/dex/tokens/SOL"
 const COINGECKO_PRICE_URL = "https://api.coingecko.com/api/v3/simple/price";
 
 const validateTokenData = (data: any): boolean => {
-  if (!data?.pairs) {
+  if (!data) {
+    console.error("No data received from API");
+    return false;
+  }
+
+  if (!data.pairs) {
     console.log("No pairs data received:", data);
     return false;
   }
@@ -19,6 +24,20 @@ const validateTokenData = (data: any): boolean => {
   
   if (data.pairs.length === 0) {
     console.log("Empty pairs array received");
+    return false;
+  }
+  
+  // Validate individual pair data
+  const hasInvalidPairs = data.pairs.some((pair: any) => {
+    return !pair.baseToken?.address || 
+           !pair.baseToken?.name || 
+           !pair.baseToken?.symbol ||
+           !pair.priceUsd ||
+           !pair.volume24h;
+  });
+
+  if (hasInvalidPairs) {
+    console.error("Some pairs have invalid or missing data");
     return false;
   }
   
@@ -51,7 +70,17 @@ const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       .filter((pair: any) => {
         const fdv = parseFloat(pair.fdv);
         const volume = parseFloat(pair.volume24h);
-        return !isNaN(fdv) && !isNaN(volume) && fdv < 10000000 && volume > 1000;
+        const isValidData = !isNaN(fdv) && !isNaN(volume) && fdv < 10000000 && volume > 1000;
+        
+        if (!isValidData) {
+          console.log(`Filtering out pair due to invalid data:`, {
+            symbol: pair.baseToken?.symbol,
+            fdv,
+            volume
+          });
+        }
+        
+        return isValidData;
       })
       .sort((a: any, b: any) => parseFloat(b.volume24h) - parseFloat(a.volume24h))
       .slice(0, 6)
@@ -91,6 +120,7 @@ const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
       throw new Error("Invalid data from CoinGecko API");
     }
 
+    // Fetch detailed price data for better accuracy
     const coinIds = data.coins.map((coin: TrendingCoin) => coin.item.id).join(',');
     const priceResponse = await fetch(
       `${COINGECKO_PRICE_URL}?ids=${coinIds}&vs_currencies=usd&include_24h_vol=true&include_24h_change=true`
@@ -115,7 +145,7 @@ const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
       priceChange24h: priceData[coin.item.id]?.usd_24h_change || 
                      coin.item.data?.price_change_percentage_24h || 0,
       liquidity: { usd: 1000000 }, // Estimated liquidity for trending coins
-      fdv: coin.item.market_cap_rank ? coin.item.market_cap_rank * 1000000 : 5000000, // Estimated FDV
+      fdv: coin.item.market_cap_rank ? coin.item.market_cap_rank * 1000000 : 5000000,
     }));
   } catch (error) {
     console.error("Error fetching from CoinGecko:", error);
