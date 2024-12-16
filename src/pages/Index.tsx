@@ -18,12 +18,14 @@ import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
 import { CryptoPulse } from "@/components/pulse/CryptoPulse";
 import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
+import { MemePredictor } from "@/components/predictor/MemePredictor";
 
 const Index = () => {
   return (
     <main className="min-h-screen">
       <Hero />
       <About />
+      <MemePredictor />
       <TokenAnalyzer />
       <MemeDiscovery />
       <MarketMoodRing />
