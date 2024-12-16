@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Brain, Sparkles, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { pipeline } from "@huggingface/transformers";
+import { pipeline, TextClassificationOutput, TextClassificationSingle } from "@huggingface/transformers";
 import { toast } from "sonner";
 
 interface TokenAnalysis {
@@ -33,14 +33,19 @@ export const TokenAnalyzer = () => {
           const text = `${token.baseToken.symbol} price ${token.priceChange24h > 0 ? 'increased' : 'decreased'} 
                        by ${Math.abs(token.priceChange24h)}% with volume ${token.volume24h}`;
           
-          const sentiment = await classifier(text);
+          const sentimentResult = await classifier(text);
+          // Handle both possible return types
+          const sentiment = Array.isArray(sentimentResult) 
+            ? sentimentResult[0].label 
+            : (sentimentResult as TextClassificationSingle).label;
+          
           const riskScore = calculateRiskScore(token);
           
           return {
             symbol: token.baseToken.symbol,
             riskScore,
-            sentiment: sentiment[0].label,
-            recommendation: generateRecommendation(riskScore, sentiment[0].label)
+            sentiment,
+            recommendation: generateRecommendation(riskScore, sentiment)
           };
         })
       );
