@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { PredictionCard } from "./PredictionCard";
 import { ChallengeCard } from "./ChallengeCard";
 import { useQuery } from "@tanstack/react-query";
-import { pipeline, TextClassificationOutput } from "@huggingface/transformers";
+import { pipeline } from "@huggingface/transformers";
 
 interface Prediction {
   symbol: string;
@@ -25,8 +25,15 @@ interface ClassificationResult {
   score: number;
 }
 
+interface TextClassificationSingle {
+  label: string;
+  score: number;
+}
+
+type TextClassificationOutput = TextClassificationSingle | TextClassificationSingle[];
+
 // Type guard to check if the result is an array
-function isClassificationArray(result: TextClassificationOutput): result is TextClassificationOutput[] {
+function isClassificationArray(result: TextClassificationOutput): result is TextClassificationSingle[] {
   return Array.isArray(result);
 }
 
@@ -35,8 +42,8 @@ function extractSentiment(result: TextClassificationOutput): ClassificationResul
   if (isClassificationArray(result)) {
     const firstResult = result[0];
     return {
-      label: firstResult.label || "NEUTRAL",
-      score: firstResult.score || 0.5
+      label: firstResult?.label || "NEUTRAL",
+      score: firstResult?.score || 0.5
     };
   }
   return {
