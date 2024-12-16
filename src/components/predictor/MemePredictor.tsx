@@ -19,6 +19,19 @@ interface Prediction {
   score: number;
 }
 
+// Define types for the classifier output
+interface ClassificationResult {
+  label: string;
+  score: number;
+}
+
+type ClassifierOutput = ClassificationResult[] | ClassificationResult;
+
+// Type guard to check if the result is an array
+function isClassificationArray(result: ClassifierOutput): result is ClassificationResult[] {
+  return Array.isArray(result);
+}
+
 export const MemePredictor = () => {
   const [userPoints, setUserPoints] = useState(0);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -49,14 +62,16 @@ export const MemePredictor = () => {
                     by ${Math.abs(token.priceChange24h)}% with volume ${token.volume24h}`;
       
       const result = await classifier(text);
-      const sentiment = Array.isArray(result) ? result[0] : result;
+      
+      // Handle both array and single result cases
+      const sentiment = isClassificationArray(result) ? result[0] : result;
       
       const prediction: Prediction = {
         symbol: token.baseToken.symbol,
-        confidence: sentiment.score || 0.5,
+        confidence: sentiment.score,
         direction: sentiment.label === "POSITIVE" ? "up" : "down",
         timeframe: "24h",
-        score: Math.round((parseFloat(token.volume24h) / 10000) * (sentiment.score || 0.5) * 100)
+        score: Math.round((parseFloat(token.volume24h) / 10000) * sentiment.score * 100)
       };
 
       setPredictions(prev => [...prev, prediction]);
