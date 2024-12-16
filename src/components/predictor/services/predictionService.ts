@@ -13,7 +13,7 @@ export async function generatePrediction(token: any): Promise<Prediction> {
     const text = `${token.baseToken.symbol} price ${token.priceChange24h > 0 ? 'increased' : 'decreased'} 
                   by ${Math.abs(token.priceChange24h)}% with volume ${token.volume24h}`;
     
-    const result = await classifier(text);
+    const result = await classifier(text) as TextClassificationOutput;
     const sentiment = extractSentiment(result);
     
     return {
