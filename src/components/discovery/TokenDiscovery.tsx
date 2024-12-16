@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, Brain, TrendingUp } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -9,7 +9,18 @@ import { TokenMetrics } from "./tokens/TokenMetrics";
 import { SearchBar } from "./search/SearchBar";
 import { useAchievements } from "@/contexts/AchievementsContext";
 import { pipeline } from "@huggingface/transformers";
-import { extractSentiment, TextClassificationOutput } from "@/components/predictor/types/prediction";
+import { extractSentiment, TextClassificationSingle } from "@/components/predictor/types/prediction";
+
+interface AnalyzedToken {
+  symbol: string;
+  name: string;
+  price: number;
+  volume24h: number;
+  marketCap: number;
+  riskLevel: number;
+  potentialScore: number;
+  communityScore: number;
+}
 
 export const TokenDiscovery = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,7 +46,7 @@ export const TokenDiscovery = () => {
           { device: "webgpu" }
         );
 
-        const analyzedTokens = await Promise.all(
+        const analyzedTokens: AnalyzedToken[] = await Promise.all(
           data.pairs
             .filter((pair: any) => parseFloat(pair.volume24h) > 1000)
             .slice(0, 10)
@@ -43,8 +54,8 @@ export const TokenDiscovery = () => {
               const text = `${pair.baseToken.symbol} price ${pair.priceChange24h > 0 ? 'increased' : 'decreased'} 
                           by ${Math.abs(pair.priceChange24h)}% with volume ${pair.volume24h}`;
               
-              const sentiment: TextClassificationOutput = await classifier(text);
-              const { score } = extractSentiment(sentiment);
+              const sentimentResult = await classifier(text);
+              const { score } = extractSentiment(sentimentResult);
               
               return {
                 symbol: pair.baseToken.symbol,
@@ -84,11 +95,11 @@ export const TokenDiscovery = () => {
 
   const filteredTokens = tokens?.filter(token => {
     const matchesSearch = token.symbol.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRisk = selectedRisk === null || token.riskLevel === selectedRisk;
+    const matchesRisk = selectedRisk === null || Math.round(token.riskLevel) === selectedRisk;
     return matchesSearch && matchesRisk;
   });
 
-  const analyzeToken = async (token: any) => {
+  const analyzeToken = async (token: AnalyzedToken) => {
     setIsAnalyzing(true);
     try {
       addAnalyzedToken(token.symbol);
@@ -110,11 +121,11 @@ export const TokenDiscovery = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-center gap-3 mb-12">
-            <Brain className="w-6 h-6 text-primary animate-pulse" />
+            <Search className="w-6 h-6 text-primary animate-pulse" />
             <h2 className="text-3xl font-display font-bold gradient-text text-center">
               AI-Powered Token Discovery
             </h2>
-            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <AlertTriangle className="w-6 h-6 text-primary animate-pulse" />
           </div>
 
           <SearchBar
@@ -145,7 +156,7 @@ export const TokenDiscovery = () => {
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {token.symbol}
-                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <Search className="w-4 h-4 text-primary" />
                       </div>
                       <Button
                         size="sm"
