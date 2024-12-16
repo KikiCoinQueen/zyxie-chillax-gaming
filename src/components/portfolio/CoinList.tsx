@@ -5,25 +5,23 @@ import { Button } from "@/components/ui/button";
 interface CoinData {
   id: string;
   symbol: string;
-  amount: string;
-  buyPrice: string;
-  currentPrice?: number;
-  profitLoss?: number;
+  amount: number;
+  buyPrice: number;
 }
 
 interface CoinListProps {
   portfolio: CoinData[];
+  prices: Record<string, { usd: number; usd_24h_change?: number }>;
   onRemoveCoin: (id: string) => void;
 }
 
-export const CoinList = ({ portfolio, onRemoveCoin }: CoinListProps) => (
+export const CoinList = ({ portfolio, prices, onRemoveCoin }: CoinListProps) => (
   <div className="space-y-4">
     {portfolio && portfolio.length > 0 ? (
       portfolio.map((coin) => {
-        const amount = parseFloat(coin.amount);
-        const buyPrice = parseFloat(coin.buyPrice);
-        const totalValue = amount * (coin.currentPrice || buyPrice);
-        const totalCost = amount * buyPrice;
+        const currentPrice = prices[coin.symbol]?.usd || coin.buyPrice;
+        const totalValue = coin.amount * currentPrice;
+        const totalCost = coin.amount * coin.buyPrice;
         const profit = totalValue - totalCost;
         const profitPercentage = ((totalValue - totalCost) / totalCost) * 100;
 

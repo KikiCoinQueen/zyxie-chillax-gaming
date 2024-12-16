@@ -105,7 +105,7 @@ export const CryptoPortfolio = () => {
                   totalCost={calculateTotalCost()}
                 />
                 <CoinList
-                  holdings={holdings}
+                  portfolio={holdings}
                   prices={prices || {}}
                   onRemoveCoin={handleRemoveCoin}
                 />
