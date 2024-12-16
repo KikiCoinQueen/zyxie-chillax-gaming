@@ -8,12 +8,14 @@ import { CryptoSection } from "@/components/CryptoSection";
 import { CryptoMarket } from "@/components/CryptoMarket";
 import { CryptoPriceChart } from "@/components/CryptoPriceChart";
 import { CryptoPortfolio } from "@/components/CryptoPortfolio";
+import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
 
 const Index = () => {
   return (
     <main className="min-h-screen">
       <Hero />
       <About />
+      <SolanaMemeCoins />
       <CryptoMarket />
       <CryptoPriceChart />
       <CryptoPortfolio />
