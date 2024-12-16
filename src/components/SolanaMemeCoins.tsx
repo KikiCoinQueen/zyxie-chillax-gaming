@@ -35,11 +35,18 @@ export const SolanaMemeCoins = () => {
         if (!response.ok) throw new Error("Failed to fetch token data");
         const data = await response.json();
         
-        // Filter for potential meme coins (low market cap, high volume)
+        // Ensure data.pairs exists before filtering
+        if (!data?.pairs) {
+          console.log("No pairs data received:", data);
+          return [];
+        }
+        
+        // Filter and sort potential meme coins
         return data.pairs
           .filter((pair: any) => {
             const fdv = parseFloat(pair.fdv);
-            return fdv && fdv < 10000000; // Less than $10M FDV
+            const volume = parseFloat(pair.volume24h);
+            return fdv && fdv < 10000000 && volume > 1000; // FDV < $10M and 24h volume > $1k
           })
           .sort((a: any, b: any) => {
             return parseFloat(b.volume24h) - parseFloat(a.volume24h);
@@ -53,15 +60,16 @@ export const SolanaMemeCoins = () => {
     refetchInterval: 30000, // Refetch every 30 seconds
     meta: {
       onError: () => {
-        toast.error("Failed to fetch Solana meme coins data");
+        toast.error("Failed to fetch Solana meme coins data. Please try again later.");
       }
     }
   });
 
   if (error) {
     return (
-      <div className="text-center text-red-500">
-        Failed to load Solana meme coins. Please try again later.
+      <div className="text-center text-red-500 py-20">
+        <p className="text-lg">Failed to load Solana meme coins.</p>
+        <p className="text-sm mt-2">Please try again later or check your connection.</p>
       </div>
     );
   }
@@ -86,10 +94,15 @@ export const SolanaMemeCoins = () => {
             <div className="flex justify-center items-center min-h-[400px]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
+          ) : tokens?.length === 0 ? (
+            <div className="text-center text-muted-foreground py-10">
+              <p>No trending meme coins found at the moment.</p>
+              <p className="text-sm mt-2">Check back soon for new opportunities!</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {tokens?.map((token: TokenData) => (
-                <Card key={token.baseToken.address} className="glass-card">
+                <Card key={token.baseToken.address} className="glass-card hover:scale-[1.02] transition-transform">
                   <CardHeader className="flex flex-row items-center gap-4">
                     <div>
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -105,7 +118,7 @@ export const SolanaMemeCoins = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Price</span>
                         <span className="font-mono">
-                          ${parseFloat(token.priceUsd).toFixed(6)}
+                          ${Number(token.priceUsd).toFixed(6)}
                         </span>
                       </div>
 
@@ -149,7 +162,7 @@ export const SolanaMemeCoins = () => {
           <div className="mt-12 text-center">
             <p className="text-sm text-muted-foreground">
               Data provided by DEXScreener • Updated every 30 seconds • 
-              <span className="text-primary ml-1">Showing low-cap gems under $10M FDV</span>
+              <span className="text-primary ml-1">Showing low-cap gems under $10M FDV with active trading</span>
             </p>
           </div>
         </motion.div>
