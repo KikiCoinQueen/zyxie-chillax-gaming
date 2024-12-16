@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Brain, TrendingUp, AlertTriangle, Trophy } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,15 +8,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { pipeline } from "@huggingface/transformers";
-
-interface AnalysisResult {
-  symbol: string;
-  sentiment: number;
-  riskScore: number;
-  socialScore: number;
-  prediction: string;
-  confidence: number;
-}
+import { AnalysisHeader } from "./analysis/AnalysisHeader";
+import { AnalysisProgress } from "./analysis/AnalysisProgress";
+import { AnalysisResult, extractSentiment } from "./analysis/types";
 
 export const MemeAnalyzer = () => {
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
@@ -35,15 +29,15 @@ export const MemeAnalyzer = () => {
         const results: AnalysisResult[] = await Promise.all(
           selectedTokens.map(async (token) => {
             const result = await classifier(`${token} market analysis`);
-            const sentiment = Array.isArray(result) ? result[0].score : result.score;
+            const sentiment = extractSentiment(result);
 
             return {
               symbol: token,
-              sentiment: sentiment * 100,
-              riskScore: Math.random() * 5, // This would be calculated based on real metrics
-              socialScore: Math.random() * 5, // This would be based on social media API data
-              prediction: sentiment > 0.6 ? "Bullish 🚀" : "Bearish 🐻",
-              confidence: sentiment * 100
+              sentiment: sentiment.score * 100,
+              riskScore: Math.random() * 5,
+              socialScore: Math.random() * 5,
+              prediction: sentiment.score > 0.6 ? "Bullish 🚀" : "Bearish 🐻",
+              confidence: sentiment.score * 100
             };
           })
         );
@@ -55,7 +49,9 @@ export const MemeAnalyzer = () => {
         return [];
       }
     },
-    enabled: selectedTokens.length > 0
+    enabled: selectedTokens.length > 0,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000)
   });
 
   const handleTokenSelect = (token: string) => {
@@ -76,13 +72,7 @@ export const MemeAnalyzer = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="flex items-center justify-center gap-3 mb-12">
-            <Brain className="w-6 h-6 text-primary animate-pulse" />
-            <h2 className="text-3xl font-display font-bold gradient-text text-center">
-              AI Meme Coin Analyzer
-            </h2>
-            <Trophy className="w-6 h-6 text-primary animate-pulse" />
-          </div>
+          <AnalysisHeader />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="glass-card col-span-1 lg:col-span-2">
@@ -160,33 +150,10 @@ export const MemeAnalyzer = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-muted-foreground">Analysis Points</span>
-                      <span className="font-mono text-xl">{userScore}</span>
-                    </div>
-                    <Progress value={(userScore % 100)} className="h-2" />
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold">Achievements</h3>
-                    <div className="space-y-2">
-                      <div className="p-3 bg-muted/30 rounded-lg">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm">Analyst Level 1</span>
-                          <Badge variant="outline">
-                            {selectedTokens.length}/5 Tokens
-                          </Badge>
-                        </div>
-                        <Progress 
-                          value={(selectedTokens.length / 5) * 100} 
-                          className="h-1.5" 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <AnalysisProgress 
+                  userScore={userScore}
+                  selectedTokens={selectedTokens}
+                />
               </CardContent>
             </Card>
           </div>
