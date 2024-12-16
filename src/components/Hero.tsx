@@ -1,14 +1,7 @@
 import { motion } from "framer-motion";
-import { Gamepad, Bitcoin } from "lucide-react";
-import { toast } from "sonner";
+import { Gamepad, Bitcoin, Twitch, Youtube } from "lucide-react";
 
 export const Hero = () => {
-  const handleAdventureClick = () => {
-    toast.success("Welcome to the adventure! 🎮", {
-      description: "Get ready for an epic journey of gaming and crypto!",
-    });
-  };
-
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden py-20 px-4">
       <div 
@@ -43,18 +36,51 @@ export const Hero = () => {
         <p className="text-xl md:text-2xl mb-8 text-muted-foreground">
           Chillin', Gammin', Crypto-Winnin'
         </p>
-        <div className="flex items-center justify-center gap-4 mb-12">
-          <Gamepad className="w-8 h-8 text-primary animate-pulse" />
-          <Bitcoin className="w-8 h-8 text-secondary animate-pulse" />
+        
+        <div className="flex flex-col items-center gap-8">
+          <div className="flex items-center justify-center gap-8 mb-8">
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <Gamepad className="w-8 h-8 text-primary" />
+              <span className="text-sm text-muted-foreground">Gaming Pro</span>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <Bitcoin className="w-8 h-8 text-secondary" />
+              <span className="text-sm text-muted-foreground">Crypto Expert</span>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <Twitch className="w-8 h-8 text-purple-500" />
+              <span className="text-sm text-muted-foreground">Live Streamer</span>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <Youtube className="w-8 h-8 text-red-500" />
+              <span className="text-sm text-muted-foreground">Content Creator</span>
+            </motion.div>
+          </div>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="glass-card p-6 max-w-lg mx-auto"
+          >
+            <p className="text-lg text-muted-foreground">
+              Welcome to my digital realm! I'm a passionate gamer, crypto enthusiast, and content creator. 
+              Join me on my journey through the latest games, crypto insights, and entertaining content.
+            </p>
+          </motion.div>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleAdventureClick}
-          className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-medium hover:shadow-lg hover:shadow-primary/25 transition-shadow duration-300"
-        >
-          Join the Adventure
-        </motion.button>
       </motion.div>
     </section>
   );
