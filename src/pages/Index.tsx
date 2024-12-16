@@ -7,9 +7,9 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { CryptoSection } from "@/components/CryptoSection";
 import { CryptoMarket } from "@/components/CryptoMarket";
 import { CryptoPriceChart } from "@/components/CryptoPriceChart";
-import { CryptoPortfolio } from "@/components/CryptoPortfolio";
 import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
 import { MemeCalculator } from "@/components/calculator/MemeCalculator";
+import { CryptoPortfolio } from "@/components/portfolio/CryptoPortfolio";
 
 const Index = () => {
   return (
@@ -18,9 +18,9 @@ const Index = () => {
       <About />
       <SolanaMemeCoins />
       <MemeCalculator />
+      <CryptoPortfolio />
       <CryptoMarket />
       <CryptoPriceChart />
-      <CryptoPortfolio />
       <CryptoSection />
       <BlogPreview />
       <SocialLinks />
