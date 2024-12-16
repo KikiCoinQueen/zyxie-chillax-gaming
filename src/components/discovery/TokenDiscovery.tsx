@@ -9,7 +9,7 @@ import { TokenMetrics } from "./tokens/TokenMetrics";
 import { SearchBar } from "./search/SearchBar";
 import { useAchievements } from "@/contexts/AchievementsContext";
 import { pipeline } from "@huggingface/transformers";
-import { extractSentiment } from "@/components/predictor/types/prediction";
+import { extractSentiment, TextClassificationOutput } from "@/components/predictor/types/prediction";
 
 export const TokenDiscovery = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +43,7 @@ export const TokenDiscovery = () => {
               const text = `${pair.baseToken.symbol} price ${pair.priceChange24h > 0 ? 'increased' : 'decreased'} 
                           by ${Math.abs(pair.priceChange24h)}% with volume ${pair.volume24h}`;
               
-              const sentiment = await classifier(text);
+              const sentiment: TextClassificationOutput = await classifier(text);
               const { score } = extractSentiment(sentiment);
               
               return {
