@@ -33,7 +33,7 @@ const BACKUP_PAIRS = [
   }
 ];
 
-// Cache management with shorter duration for more frequent updates
+// Reduced cache duration for more frequent updates
 const CACHE_DURATION = 15000; // 15 seconds
 let lastSuccessfulResponse: TokenData[] | null = null;
 let lastFetchTime: number | null = null;
@@ -43,10 +43,16 @@ const isCacheValid = () => {
          (Date.now() - lastFetchTime) < CACHE_DURATION;
 };
 
+const handleApiError = (error: any, source: string) => {
+  console.error(`Error in ${source}:`, error);
+  toast.error(`Failed to fetch data from ${source}`, {
+    description: "Attempting to use alternative data source"
+  });
+};
+
 export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   console.log("Attempting to fetch from DexScreener...");
   
-  // Check cache first
   if (isCacheValid()) {
     console.log("Using cached data");
     return lastSuccessfulResponse!;
@@ -54,7 +60,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced timeout to 5 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced timeout
 
     const response = await fetch(DEX_SCREENER_API_URL, {
       headers: {
@@ -67,15 +73,13 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     clearTimeout(timeoutId);
     
     if (!response.ok) {
-      console.error(`DexScreener API failed with status: ${response.status}`);
       throw new Error(`DexScreener API failed with status: ${response.status}`);
     }
     
     const data = await response.json();
     console.log("DexScreener API response:", data);
     
-    if (!data || !data.pairs) {
-      console.error("Invalid or empty response from DexScreener");
+    if (!data?.pairs) {
       throw new Error("Invalid data structure");
     }
     
@@ -83,8 +87,8 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       .filter((pair: any) => {
         try {
           return validatePairData(pair) && 
-                 parseFloat(pair.volume24h) > 1000 && // Minimum volume requirement
-                 parseFloat(pair.fdv) < 10000000; // Maximum FDV requirement
+                 parseFloat(pair.volume24h) > 1000 && 
+                 parseFloat(pair.fdv) < 10000000;
         } catch (error) {
           console.error("Error validating pair:", error);
           return false;
@@ -113,16 +117,14 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       return await fetchBackupData();
     }
 
-    // Update cache
     lastSuccessfulResponse = validPairs;
     lastFetchTime = Date.now();
     
     console.log("Successfully fetched and processed pairs:", validPairs.length);
     return validPairs;
   } catch (error) {
-    console.error("Error fetching from DexScreener:", error);
+    handleApiError(error, "DexScreener");
     
-    // Use cache if available and not too old
     if (lastSuccessfulResponse && lastFetchTime && 
         (Date.now() - lastFetchTime) < CACHE_DURATION * 2) {
       toast.warning("Using cached data while refreshing", {
@@ -157,10 +159,10 @@ const fetchBackupData = async (): Promise<TokenData[]> => {
           name: coin.item.name,
           symbol: coin.item.symbol,
         },
-        priceUsd: (coin.item.price_btc * 40000).toString(), // Approximate USD value
+        priceUsd: (coin.item.price_btc * 40000).toString(),
         volume24h: (coin.item.price_btc * 40000 * 1000000).toString(),
         priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
-        liquidity: { usd: 1000000 }, // Default liquidity
+        liquidity: { usd: 1000000 },
         fdv: coin.item.market_cap_rank ? coin.item.market_cap_rank * 1000000 : 5000000,
       }));
 
@@ -171,7 +173,7 @@ const fetchBackupData = async (): Promise<TokenData[]> => {
     
     return backupTokens;
   } catch (error) {
-    console.error("Backup API also failed:", error);
+    handleApiError(error, "backup API");
     toast.error("Using fallback data", {
       description: "We're having trouble connecting to our data providers."
     });
