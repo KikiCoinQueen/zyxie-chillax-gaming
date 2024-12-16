@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 const DEX_SCREENER_API_URL = "https://api.dexscreener.com/latest/dex/tokens/SOL";
 
+// Enhanced backup data with more realistic values
 const BACKUP_PAIRS = [
   {
     baseToken: {
@@ -16,11 +17,26 @@ const BACKUP_PAIRS = [
     priceChange24h: 5.2,
     liquidity: { usd: 10000000 },
     fdv: 1000000
+  },
+  {
+    baseToken: {
+      address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      name: "USD Coin",
+      symbol: "USDC"
+    },
+    priceUsd: "1.00",
+    volume24h: "500000",
+    priceChange24h: 0.1,
+    liquidity: { usd: 5000000 },
+    fdv: 500000
   }
 ];
 
+let lastSuccessfulResponse: TokenData[] | null = null;
+
 export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   console.log("Attempting to fetch from DexScreener...");
+  
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -36,7 +52,6 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     clearTimeout(timeoutId);
     
     if (!response.ok) {
-      console.error(`DexScreener API failed with status: ${response.status}`);
       throw new Error(`DexScreener API failed with status: ${response.status}`);
     }
     
@@ -44,11 +59,8 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     console.log("DexScreener API response:", data);
     
     if (!validateTokenData(data)) {
-      console.log("Invalid data structure, using backup data");
-      toast.warning("Using backup data due to API issues", {
-        description: "We're experiencing some temporary issues with our data provider."
-      });
-      return BACKUP_PAIRS;
+      console.log("Invalid data structure received");
+      throw new Error("Invalid data structure");
     }
     
     const validPairs = data.pairs
@@ -69,18 +81,25 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       }));
 
     if (validPairs.length === 0) {
-      console.log("No valid pairs found, using backup data");
-      toast.warning("Using backup data due to data quality issues", {
-        description: "We're working on improving our data quality."
-      });
-      return BACKUP_PAIRS;
+      throw new Error("No valid pairs found");
     }
 
+    lastSuccessfulResponse = validPairs;
     return validPairs;
   } catch (error) {
     console.error("Error fetching from DexScreener:", error);
-    toast.error("Data fetch failed, using backup data", {
-      description: "We'll retry fetching fresh data soon."
+    
+    // Use last successful response if available
+    if (lastSuccessfulResponse) {
+      toast.warning("Using cached data while refreshing", {
+        description: "We're experiencing temporary API issues."
+      });
+      return lastSuccessfulResponse;
+    }
+    
+    // Fallback to backup data
+    toast.error("Using backup data", {
+      description: "We're having trouble connecting to our data provider."
     });
     return BACKUP_PAIRS;
   }

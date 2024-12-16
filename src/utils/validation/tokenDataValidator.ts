@@ -14,9 +14,10 @@ export const validateTokenData = (data: any): boolean => {
     return false;
   }
   
+  // Allow empty arrays but log them
   if (data.pairs.length === 0) {
     console.log("Empty pairs array received");
-    return false;
+    return true;
   }
   
   return true;
@@ -28,26 +29,53 @@ export const validatePairData = (pair: any): boolean => {
     return false;
   }
 
-  const hasRequiredFields = 
-    pair.baseToken?.address && 
-    typeof pair.baseToken?.address === 'string' &&
-    pair.priceUsd &&
-    pair.volume24h;
+  // Check for required fields with detailed logging
+  const requiredFields = {
+    'baseToken.address': pair.baseToken?.address,
+    'priceUsd': pair.priceUsd,
+    'volume24h': pair.volume24h
+  };
 
-  if (!hasRequiredFields) {
-    console.log("Missing required fields in pair:", pair);
+  const missingFields = Object.entries(requiredFields)
+    .filter(([_, value]) => !value)
+    .map(([field]) => field);
+
+  if (missingFields.length > 0) {
+    console.log("Missing required fields:", missingFields.join(', '));
     return false;
   }
 
-  const fdv = parseFloat(pair.fdv);
-  const volume = parseFloat(pair.volume24h);
+  // Validate numeric values
+  const numericFields = {
+    'fdv': parseFloat(pair.fdv),
+    'volume24h': parseFloat(pair.volume24h),
+    'priceChange24h': parseFloat(pair.priceChange24h || '0')
+  };
+
+  const invalidNumbers = Object.entries(numericFields)
+    .filter(([_, value]) => isNaN(value))
+    .map(([field]) => field);
+
+  if (invalidNumbers.length > 0) {
+    console.log("Invalid numeric values:", invalidNumbers.join(', '));
+    return false;
+  }
+
+  // Business logic validation
+  const fdv = numericFields.fdv;
+  const volume = numericFields.volume24h;
   
-  if (isNaN(fdv) || isNaN(volume)) {
-    console.log("Invalid numeric values in pair:", { fdv, volume });
+  if (fdv >= 10000000) {
+    console.log("FDV too high:", fdv);
     return false;
   }
   
-  return fdv < 10000000 && volume > 1000;
+  if (volume <= 1000) {
+    console.log("Volume too low:", volume);
+    return false;
+  }
+  
+  return true;
 };
 
 export const validateMarketChartData = (data: any): boolean => {
@@ -61,15 +89,15 @@ export const validateMarketChartData = (data: any): boolean => {
     return false;
   }
 
-  const hasValidPricePoints = data.prices.every((point: any) => 
-    Array.isArray(point) && 
-    point.length === 2 && 
-    typeof point[0] === 'number' && 
-    typeof point[1] === 'number'
+  const invalidPoints = data.prices.filter((point: any) => 
+    !Array.isArray(point) || 
+    point.length !== 2 || 
+    typeof point[0] !== 'number' || 
+    typeof point[1] !== 'number'
   );
 
-  if (!hasValidPricePoints) {
-    console.log("Invalid price points in market chart data");
+  if (invalidPoints.length > 0) {
+    console.log("Invalid price points found:", invalidPoints);
     return false;
   }
 
