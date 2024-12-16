@@ -5,35 +5,7 @@ import { toast } from "sonner";
 const DEX_SCREENER_API_URL = "https://api.dexscreener.com/latest/dex/tokens/SOL";
 const BACKUP_API_URL = "https://api.coingecko.com/api/v3/search/trending";
 
-// Enhanced backup data with more realistic values
-const BACKUP_PAIRS = [
-  {
-    baseToken: {
-      address: "So11111111111111111111111111111111111111112",
-      name: "Wrapped SOL",
-      symbol: "SOL"
-    },
-    priceUsd: "100.00",
-    volume24h: "1000000",
-    priceChange24h: 5.2,
-    liquidity: { usd: 10000000 },
-    fdv: 1000000
-  },
-  {
-    baseToken: {
-      address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      name: "USD Coin",
-      symbol: "USDC"
-    },
-    priceUsd: "1.00",
-    volume24h: "500000",
-    priceChange24h: 0.1,
-    liquidity: { usd: 5000000 },
-    fdv: 500000
-  }
-];
-
-// Reduced cache duration for more frequent updates
+// Cache duration reduced for more frequent updates
 const CACHE_DURATION = 15000; // 15 seconds
 let lastSuccessfulResponse: TokenData[] | null = null;
 let lastFetchTime: number | null = null;
@@ -193,3 +165,31 @@ const fetchBackupData = async (): Promise<TokenData[]> => {
     return BACKUP_PAIRS;
   }
 };
+
+// Enhanced backup data with more realistic values
+const BACKUP_PAIRS = [
+  {
+    baseToken: {
+      address: "So11111111111111111111111111111111111111112",
+      name: "Wrapped SOL",
+      symbol: "SOL"
+    },
+    priceUsd: "100.00",
+    volume24h: "1000000",
+    priceChange24h: 5.2,
+    liquidity: { usd: 10000000 },
+    fdv: 1000000
+  },
+  {
+    baseToken: {
+      address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      name: "USD Coin",
+      symbol: "USDC"
+    },
+    priceUsd: "1.00",
+    volume24h: "500000",
+    priceChange24h: 0.1,
+    liquidity: { usd: 5000000 },
+    fdv: 500000
+  }
+];
