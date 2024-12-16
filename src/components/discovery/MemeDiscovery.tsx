@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, TrendingUp, AlertTriangle, Star } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import { SearchBar } from "./search/SearchBar";
+import { TokenMetrics } from "./tokens/TokenMetrics";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface DiscoveryToken {
   symbol: string;
@@ -59,18 +57,6 @@ export const MemeDiscovery = () => {
     refetchInterval: 30000
   });
 
-  const getRiskColor = (risk: number): string => {
-    if (risk >= 4) return "text-red-500";
-    if (risk >= 3) return "text-yellow-500";
-    return "text-green-500";
-  };
-
-  const getPotentialBadge = (score: number) => {
-    if (score >= 4) return "🌟 High Potential";
-    if (score >= 3) return "⭐ Promising";
-    return "💫 Speculative";
-  };
-
   return (
     <section className="py-20 px-4" id="discovery">
       <div className="container max-w-6xl mx-auto">
@@ -87,116 +73,28 @@ export const MemeDiscovery = () => {
             <Star className="w-6 h-6 text-primary animate-pulse" />
           </div>
 
-          <div className="max-w-xl mx-auto mb-8">
-            <div className="flex gap-4 mb-4">
-              <Input
-                placeholder="Search by symbol..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="glass-card"
-              />
-              <Button
-                variant="outline"
-                onClick={() => setSelectedRisk(null)}
-                className={!selectedRisk ? "bg-primary/20" : ""}
-              >
-                All Risks
-              </Button>
-            </div>
-            
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {[1, 2, 3, 4, 5].map((risk) => (
-                <Button
-                  key={risk}
-                  variant="outline"
-                  onClick={() => setSelectedRisk(risk)}
-                  className={selectedRisk === risk ? "bg-primary/20" : ""}
-                >
-                  Risk {risk}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <SearchBar
+            searchTerm={searchTerm}
+            selectedRisk={selectedRisk}
+            onSearchChange={setSearchTerm}
+            onRiskSelect={setSelectedRisk}
+          />
 
           {isLoading ? (
             <div className="flex justify-center items-center min-h-[400px]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
+          ) : tokens?.length === 0 ? (
+            <div className="text-center text-muted-foreground py-10">
+              <p>No opportunities found at the moment.</p>
+              <p className="text-sm mt-2">Check back soon for new gems!</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tokens?.map((token) => (
+              {tokens?.map((token: DiscoveryToken) => (
                 <Card key={token.symbol} className="glass-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div>
-                        {token.symbol}
-                        <span className="text-sm text-muted-foreground ml-2">
-                          {token.name}
-                        </span>
-                      </div>
-                      <Badge>
-                        {getPotentialBadge(token.potentialScore)}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
-                          <span>Risk Level</span>
-                          <span className={`font-mono ${getRiskColor(token.riskLevel)}`}>
-                            {token.riskLevel.toFixed(1)}/5
-                          </span>
-                        </div>
-                        <Progress 
-                          value={token.riskLevel * 20} 
-                          className="h-1.5"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
-                          <span>Growth Potential</span>
-                          <span className="font-mono">
-                            {token.potentialScore.toFixed(1)}/5
-                          </span>
-                        </div>
-                        <Progress 
-                          value={token.potentialScore * 20} 
-                          className="h-1.5"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
-                          <span>Community Score</span>
-                          <span className="font-mono">
-                            {token.communityScore.toFixed(1)}/5
-                          </span>
-                        </div>
-                        <Progress 
-                          value={token.communityScore * 20} 
-                          className="h-1.5"
-                        />
-                      </div>
-
-                      <div className="pt-4 border-t border-border/50">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Price</p>
-                            <p className="font-mono">
-                              ${token.price.toFixed(6)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Volume 24h</p>
-                            <p className="font-mono">
-                              ${token.volume24h.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  <CardContent className="pt-6">
+                    <TokenMetrics {...token} />
                   </CardContent>
                 </Card>
               ))}
