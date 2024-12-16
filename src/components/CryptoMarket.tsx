@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import {
   Card,
   CardContent,
