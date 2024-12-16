@@ -20,6 +20,7 @@ import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 import { MemePredictor } from "@/components/predictor/MemePredictor";
 import { MemeAnalyzer } from "@/components/ai/MemeAnalyzer";
+import { ZyxieGenerator } from "@/components/ZyxieGenerator";
 import { AchievementsProvider } from "@/contexts/AchievementsContext";
 
 const Index = () => {
@@ -28,6 +29,7 @@ const Index = () => {
       <main className="min-h-screen">
         <Hero />
         <About />
+        <ZyxieGenerator />
         <MemeAnalyzer />
         <MemePredictor />
         <TokenAnalyzer />
