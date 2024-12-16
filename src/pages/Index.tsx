@@ -7,6 +7,7 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { CryptoSection } from "@/components/CryptoSection";
 import { CryptoMarket } from "@/components/CryptoMarket";
 import { CryptoPriceChart } from "@/components/CryptoPriceChart";
+import { CryptoPortfolio } from "@/components/CryptoPortfolio";
 
 const Index = () => {
   return (
@@ -15,6 +16,7 @@ const Index = () => {
       <About />
       <CryptoMarket />
       <CryptoPriceChart />
+      <CryptoPortfolio />
       <CryptoSection />
       <BlogPreview />
       <SocialLinks />
