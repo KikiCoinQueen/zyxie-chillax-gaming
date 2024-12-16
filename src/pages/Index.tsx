@@ -10,6 +10,7 @@ import { CryptoPriceChart } from "@/components/CryptoPriceChart";
 import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
 import { MemeCalculator } from "@/components/calculator/MemeCalculator";
 import { CryptoPortfolio } from "@/components/portfolio/CryptoPortfolio";
+import { MemeLeaderboard } from "@/components/leaderboard/MemeLeaderboard";
 
 const Index = () => {
   return (
@@ -17,6 +18,7 @@ const Index = () => {
       <Hero />
       <About />
       <SolanaMemeCoins />
+      <MemeLeaderboard />
       <MemeCalculator />
       <CryptoPortfolio />
       <CryptoMarket />
