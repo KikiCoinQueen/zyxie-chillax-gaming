@@ -29,12 +29,12 @@ const Index = () => {
       <main className="min-h-screen">
         <Hero />
         <About />
+        <MarketMoodRing />
         <ZyxieGenerator />
         <MemeAnalyzer />
         <MemePredictor />
         <TokenAnalyzer />
         <MemeDiscovery />
-        <MarketMoodRing />
         <CryptoPulse />
         <OpportunityScanner />
         <SolanaMemeCoins />
