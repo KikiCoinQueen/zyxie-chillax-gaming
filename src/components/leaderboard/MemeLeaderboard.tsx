@@ -138,7 +138,7 @@ export const MemeLeaderboard = () => {
 
           <div className="mt-12 text-center">
             <p className="text-sm text-muted-foreground">
-              Data updates every 30 seconds • Only showing tokens with 24h volume > $5,000 •{" "}
+              Data updates every 30 seconds • Only showing tokens with 24h volume &gt; $5,000 •{" "}
               <span className="text-primary">Top 5 gainers</span>
             </p>
           </div>
