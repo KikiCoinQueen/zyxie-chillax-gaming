@@ -46,8 +46,8 @@ export const CryptoPortfolio = () => {
     toast.success("Coin added to portfolio!");
   };
 
-  const handleRemoveCoin = (index: number) => {
-    const updatedPortfolio = portfolio.filter((_, i) => i !== index);
+  const handleRemoveCoin = (id: string) => {
+    const updatedPortfolio = portfolio.filter(coin => coin.id !== id);
     setPortfolio(updatedPortfolio);
     localStorage.setItem("portfolio", JSON.stringify(updatedPortfolio));
     toast.success("Coin removed from portfolio!");

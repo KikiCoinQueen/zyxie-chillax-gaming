@@ -13,13 +13,13 @@ interface CoinData {
 
 interface CoinListProps {
   portfolio: CoinData[];
-  onRemoveCoin: (index: number) => void;
+  onRemoveCoin: (id: string) => void;
 }
 
 export const CoinList = ({ portfolio, onRemoveCoin }: CoinListProps) => (
   <div className="space-y-4">
     {portfolio && portfolio.length > 0 ? (
-      portfolio.map((coin, index) => {
+      portfolio.map((coin) => {
         const amount = parseFloat(coin.amount);
         const buyPrice = parseFloat(coin.buyPrice);
         const totalValue = amount * (coin.currentPrice || buyPrice);
@@ -58,14 +58,14 @@ export const CoinList = ({ portfolio, onRemoveCoin }: CoinListProps) => (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onRemoveCoin(index)}
+                onClick={() => onRemoveCoin(coin.id)}
                 className="text-destructive hover:text-destructive/90"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </motion.div>
-        )
+        );
       })
     ) : (
       <div className="text-center py-8 text-muted-foreground">
