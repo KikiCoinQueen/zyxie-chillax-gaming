@@ -9,7 +9,11 @@ import { TokenMetrics } from "./tokens/TokenMetrics";
 import { SearchBar } from "./search/SearchBar";
 import { useAchievements } from "@/contexts/AchievementsContext";
 import { pipeline } from "@huggingface/transformers";
-import { extractSentiment, TextClassificationSingle } from "@/components/predictor/types/prediction";
+import { 
+  extractSentiment, 
+  TextClassificationSingle, 
+  TextClassificationOutput 
+} from "@/components/predictor/types/prediction";
 
 interface AnalyzedToken {
   symbol: string;
@@ -54,8 +58,8 @@ export const TokenDiscovery = () => {
               const text = `${pair.baseToken.symbol} price ${pair.priceChange24h > 0 ? 'increased' : 'decreased'} 
                           by ${Math.abs(pair.priceChange24h)}% with volume ${pair.volume24h}`;
               
-              const sentimentResult = await classifier(text);
-              const { score } = extractSentiment(sentimentResult);
+              const sentimentResult = await classifier(text) as TextClassificationOutput;
+              const sentiment = extractSentiment(sentimentResult);
               
               return {
                 symbol: pair.baseToken.symbol,
@@ -64,7 +68,7 @@ export const TokenDiscovery = () => {
                 volume24h: parseFloat(pair.volume24h),
                 marketCap: pair.fdv || 0,
                 riskLevel: calculateRiskScore(pair),
-                potentialScore: score * 5,
+                potentialScore: sentiment.score * 5,
                 communityScore: Math.random() * 5
               };
             })
