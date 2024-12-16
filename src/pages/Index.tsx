@@ -16,12 +16,14 @@ import { MarketSentiment } from "@/components/insights/MarketSentiment";
 import { OpportunityScanner } from "@/components/scanner/OpportunityScanner";
 import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
 import { CryptoPulse } from "@/components/pulse/CryptoPulse";
+import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 
 const Index = () => {
   return (
     <main className="min-h-screen">
       <Hero />
       <About />
+      <TokenAnalyzer />
       <MarketMoodRing />
       <CryptoPulse />
       <OpportunityScanner />
