@@ -19,7 +19,7 @@ interface PriceData {
   sentiment: number;
 }
 
-const CryptoPulse = () => {
+export const CryptoPulse = () => {
   const { data: priceData, isLoading } = useQuery({
     queryKey: ["cryptoPulse"],
     queryFn: async () => {
@@ -171,5 +171,3 @@ const CryptoPulse = () => {
     </section>
   );
 };
-
-export default CryptoPulse;
