@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { Twitter, MessageSquare, Mail, TiktokIcon } from "lucide-react";
+import { Twitter, MessageSquare, Mail, Tiktok } from "lucide-react";
 
 export const SocialLinks = () => {
   const socials = [
     { icon: Twitter, label: "Twitter", href: "https://x.com/zyxiearcadia" },
-    { icon: TiktokIcon, label: "TikTok", href: "https://www.tiktok.com/@zyxiearcadia" },
+    { icon: Tiktok, label: "TikTok", href: "https://www.tiktok.com/@zyxiearcadia" },
     { icon: Mail, label: "Email", href: "mailto:zyxiearcadia@outlook.com" },
     { icon: MessageSquare, label: "Discord", href: "#" },
   ];
