@@ -49,7 +49,10 @@ export const CryptoMarket = () => {
     refetchInterval: 60000, // Refetch every minute
   });
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined | null): string => {
+    if (typeof value !== 'number' || isNaN(value)) {
+      return 'N/A';
+    }
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
@@ -161,9 +164,7 @@ export const CryptoMarket = () => {
                               ? 'text-green-500' 
                               : 'text-red-500'
                           }`}>
-                            {coin.item.data?.price_change_percentage_24h 
-                              ? formatPercentage(coin.item.data.price_change_percentage_24h)
-                              : 'N/A'}
+                            {formatPercentage(coin.item.data?.price_change_percentage_24h)}
                           </p>
                         </div>
                         <div>
