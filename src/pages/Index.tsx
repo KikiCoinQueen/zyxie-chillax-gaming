@@ -14,12 +14,14 @@ import { MemeLeaderboard } from "@/components/leaderboard/MemeLeaderboard";
 import { MemeInsights } from "@/components/insights/MemeInsights";
 import { MarketSentiment } from "@/components/insights/MarketSentiment";
 import { OpportunityScanner } from "@/components/scanner/OpportunityScanner";
+import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
 
 const Index = () => {
   return (
     <main className="min-h-screen">
       <Hero />
       <About />
+      <MarketMoodRing />
       <OpportunityScanner />
       <SolanaMemeCoins />
       <MemeInsights />
