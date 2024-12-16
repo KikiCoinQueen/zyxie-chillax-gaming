@@ -50,6 +50,18 @@ const handleApiError = (error: any, source: string) => {
   });
 };
 
+const retryWithExponentialBackoff = async (fn: () => Promise<any>, maxRetries = 3) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      const delay = Math.min(1000 * Math.pow(2, i), 5000);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
+
 export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   console.log("Attempting to fetch from DexScreener...");
   
@@ -60,21 +72,22 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced timeout
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(DEX_SCREENER_API_URL, {
-      headers: {
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache'
-      },
-      signal: controller.signal
+    const response = await retryWithExponentialBackoff(async () => {
+      const res = await fetch(DEX_SCREENER_API_URL, {
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        signal: controller.signal
+      });
+      
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return res;
     });
     
     clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`DexScreener API failed with status: ${response.status}`);
-    }
     
     const data = await response.json();
     console.log("DexScreener API response:", data);
@@ -140,11 +153,11 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
 const fetchBackupData = async (): Promise<TokenData[]> => {
   try {
     console.log("Attempting to fetch backup data from CoinGecko...");
-    const response = await fetch(BACKUP_API_URL);
-    
-    if (!response.ok) {
-      throw new Error("Backup API failed");
-    }
+    const response = await retryWithExponentialBackoff(async () => {
+      const res = await fetch(BACKUP_API_URL);
+      if (!res.ok) throw new Error("Backup API failed");
+      return res;
+    });
     
     const data = await response.json();
     if (!data?.coins || !Array.isArray(data.coins)) {
