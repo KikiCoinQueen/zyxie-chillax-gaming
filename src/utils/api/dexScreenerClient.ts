@@ -33,8 +33,8 @@ const BACKUP_PAIRS = [
   }
 ];
 
-// Cache management
-const CACHE_DURATION = 30000; // 30 seconds
+// Cache management with shorter duration for more frequent updates
+const CACHE_DURATION = 15000; // 15 seconds
 let lastSuccessfulResponse: TokenData[] | null = null;
 let lastFetchTime: number | null = null;
 
@@ -54,7 +54,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced timeout to 5 seconds
 
     const response = await fetch(DEX_SCREENER_API_URL, {
       headers: {
@@ -67,19 +67,29 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     clearTimeout(timeoutId);
     
     if (!response.ok) {
+      console.error(`DexScreener API failed with status: ${response.status}`);
       throw new Error(`DexScreener API failed with status: ${response.status}`);
     }
     
     const data = await response.json();
     console.log("DexScreener API response:", data);
     
-    if (!validateTokenData(data)) {
-      console.log("Invalid data structure received");
+    if (!data || !data.pairs) {
+      console.error("Invalid or empty response from DexScreener");
       throw new Error("Invalid data structure");
     }
     
     const validPairs = data.pairs
-      ?.filter(validatePairData)
+      .filter((pair: any) => {
+        try {
+          return validatePairData(pair) && 
+                 parseFloat(pair.volume24h) > 1000 && // Minimum volume requirement
+                 parseFloat(pair.fdv) < 10000000; // Maximum FDV requirement
+        } catch (error) {
+          console.error("Error validating pair:", error);
+          return false;
+        }
+      })
       .sort((a: any, b: any) => parseFloat(b.volume24h) - parseFloat(a.volume24h))
       .slice(0, 6)
       .map((pair: any) => ({
@@ -93,16 +103,21 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
         priceChange24h: parseFloat(pair.priceChange24h || "0"),
         liquidity: { usd: pair.liquidity?.usd || 0 },
         fdv: parseFloat(pair.fdv || "0"),
-      })) || [];
+      }));
 
     if (validPairs.length === 0) {
-      console.log("No valid pairs found, attempting backup API");
+      console.warn("No valid pairs found after filtering");
+      toast.warning("Limited market data available", {
+        description: "Using alternative data sources"
+      });
       return await fetchBackupData();
     }
 
     // Update cache
     lastSuccessfulResponse = validPairs;
     lastFetchTime = Date.now();
+    
+    console.log("Successfully fetched and processed pairs:", validPairs.length);
     return validPairs;
   } catch (error) {
     console.error("Error fetching from DexScreener:", error);
@@ -122,14 +137,16 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
 
 const fetchBackupData = async (): Promise<TokenData[]> => {
   try {
+    console.log("Attempting to fetch backup data from CoinGecko...");
     const response = await fetch(BACKUP_API_URL);
+    
     if (!response.ok) {
       throw new Error("Backup API failed");
     }
     
     const data = await response.json();
     if (!data?.coins || !Array.isArray(data.coins)) {
-      throw new Error("Invalid backup data");
+      throw new Error("Invalid backup data structure");
     }
 
     const backupTokens = data.coins
@@ -140,13 +157,14 @@ const fetchBackupData = async (): Promise<TokenData[]> => {
           name: coin.item.name,
           symbol: coin.item.symbol,
         },
-        priceUsd: (coin.item.price_btc * 40000).toString(),
+        priceUsd: (coin.item.price_btc * 40000).toString(), // Approximate USD value
         volume24h: (coin.item.price_btc * 40000 * 1000000).toString(),
         priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
-        liquidity: { usd: 1000000 },
+        liquidity: { usd: 1000000 }, // Default liquidity
         fdv: coin.item.market_cap_rank ? coin.item.market_cap_rank * 1000000 : 5000000,
       }));
 
+    console.log("Successfully fetched backup data:", backupTokens.length);
     toast.info("Using backup data source", {
       description: "Primary API is temporarily unavailable."
     });

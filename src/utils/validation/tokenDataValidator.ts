@@ -1,11 +1,11 @@
 export const validateTokenData = (data: any): boolean => {
   if (!data) {
-    console.log("Received null or undefined data");
+    console.error("Received null or undefined data");
     return false;
   }
   
-  if (!data.pairs && !Array.isArray(data.pairs)) {
-    console.log("Invalid pairs property in data:", data);
+  if (!Array.isArray(data.pairs)) {
+    console.error("Invalid pairs property in data:", data);
     return false;
   }
   
@@ -14,11 +14,11 @@ export const validateTokenData = (data: any): boolean => {
 
 export const validatePairData = (pair: any): boolean => {
   if (!pair || typeof pair !== 'object') {
-    console.log("Invalid pair object:", pair);
+    console.error("Invalid pair object:", pair);
     return false;
   }
 
-  // Required fields validation
+  // Required fields validation with detailed logging
   const requiredFields = {
     'baseToken.address': pair.baseToken?.address,
     'baseToken.symbol': pair.baseToken?.symbol,
@@ -31,11 +31,11 @@ export const validatePairData = (pair: any): boolean => {
     .map(([field]) => field);
 
   if (missingFields.length > 0) {
-    console.log("Missing required fields:", missingFields.join(', '));
+    console.error("Missing required fields:", missingFields.join(', '));
     return false;
   }
 
-  // Numeric validation
+  // Numeric validation with detailed logging
   const numericFields = {
     'volume24h': parseFloat(pair.volume24h),
     'priceChange24h': parseFloat(pair.priceChange24h || '0'),
@@ -47,7 +47,18 @@ export const validatePairData = (pair: any): boolean => {
     .map(([field]) => field);
 
   if (invalidNumbers.length > 0) {
-    console.log("Invalid numeric values:", invalidNumbers.join(', '));
+    console.error("Invalid numeric values:", invalidNumbers.join(', '));
+    return false;
+  }
+
+  // Additional validation for reasonable values
+  if (parseFloat(pair.volume24h) < 0) {
+    console.error("Invalid negative volume:", pair.volume24h);
+    return false;
+  }
+
+  if (parseFloat(pair.priceUsd) < 0) {
+    console.error("Invalid negative price:", pair.priceUsd);
     return false;
   }
 
@@ -56,12 +67,12 @@ export const validatePairData = (pair: any): boolean => {
 
 export const validateMarketChartData = (data: any): boolean => {
   if (!data?.prices || !Array.isArray(data.prices)) {
-    console.log("Invalid market chart data structure:", data);
+    console.error("Invalid market chart data structure:", data);
     return false;
   }
 
   if (data.prices.length === 0) {
-    console.log("Empty prices array in market chart data");
+    console.error("Empty prices array in market chart data");
     return false;
   }
 
@@ -73,7 +84,7 @@ export const validateMarketChartData = (data: any): boolean => {
   );
 
   if (invalidPoints.length > 0) {
-    console.log("Invalid price points found:", invalidPoints);
+    console.error("Invalid price points found:", invalidPoints);
     return false;
   }
 
