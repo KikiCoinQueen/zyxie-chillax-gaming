@@ -5,9 +5,20 @@ import { toast } from "sonner";
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
 const DEX_SCREENER_API_URL = "https://api.dexscreener.com/latest/dex/tokens/SOL";
 
+// Improved data validation with detailed logging
 const validateTokenData = (data: any): boolean => {
-  if (!data || !data.pairs || !Array.isArray(data.pairs)) {
-    console.log("Invalid data structure received:", data);
+  if (!data) {
+    console.log("Received null or undefined data");
+    return false;
+  }
+  
+  if (!data.pairs) {
+    console.log("No pairs property in data:", data);
+    return false;
+  }
+  
+  if (!Array.isArray(data.pairs)) {
+    console.log("Pairs is not an array:", data.pairs);
     return false;
   }
   
@@ -26,7 +37,9 @@ const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       headers: {
         'Accept': 'application/json',
         'Cache-Control': 'no-cache'
-      }
+      },
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000)
     });
     
     if (!response.ok) {
@@ -44,7 +57,17 @@ const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       .filter((pair: any) => {
         const fdv = parseFloat(pair.fdv);
         const volume = parseFloat(pair.volume24h);
-        return !isNaN(fdv) && !isNaN(volume) && fdv < 10000000 && volume > 1000;
+        const hasRequiredFields = pair.baseToken?.address && 
+                                pair.baseToken?.name && 
+                                pair.baseToken?.symbol &&
+                                pair.priceUsd &&
+                                pair.volume24h;
+                                
+        return hasRequiredFields && 
+               !isNaN(fdv) && 
+               !isNaN(volume) && 
+               fdv < 10000000 && 
+               volume > 1000;
       })
       .sort((a: any, b: any) => parseFloat(b.volume24h) - parseFloat(a.volume24h))
       .slice(0, 6)
@@ -69,10 +92,12 @@ const fetchDexScreenerData = async (): Promise<TokenData[]> => {
 const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
   console.log("Fetching from CoinGecko fallback...");
   try {
-    const response = await fetch(`${COINGECKO_BASE_URL}/search/trending`);
+    const response = await fetch(`${COINGECKO_BASE_URL}/search/trending`, {
+      signal: AbortSignal.timeout(10000)
+    });
     
     if (!response.ok) {
-      throw new Error("CoinGecko API failed");
+      throw new Error(`CoinGecko API failed with status: ${response.status}`);
     }
     
     const data = await response.json();
@@ -83,7 +108,10 @@ const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
 
     const coinIds = data.coins.map((coin: TrendingCoin) => coin.item.id).join(',');
     const priceResponse = await fetch(
-      `${COINGECKO_BASE_URL}/simple/price?ids=${coinIds}&vs_currencies=usd&include_24h_vol=true&include_24h_change=true`
+      `${COINGECKO_BASE_URL}/simple/price?ids=${coinIds}&vs_currencies=usd&include_24h_vol=true&include_24h_change=true`,
+      {
+        signal: AbortSignal.timeout(10000)
+      }
     );
     
     if (!priceResponse.ok) {
@@ -133,7 +161,7 @@ export const fetchSolanaTokens = async (useFallback: boolean): Promise<TokenData
     fetchCoinGeckoData,
     {
       onFallback: () => {
-        toast.warning("Using fallback data source", {
+        toast.warning("Primary API unavailable, using fallback data source", {
           duration: 5000,
           action: {
             label: "Retry Primary",
@@ -152,8 +180,12 @@ export const fetchSolanaTokens = async (useFallback: boolean): Promise<TokenData
 
 export const fetchMarketChart = async (coinId: string, days: number = 2) => {
   try {
+    // Removed interval parameter as it's enterprise-only
     const response = await fetch(
-      `${COINGECKO_BASE_URL}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`
+      `${COINGECKO_BASE_URL}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`,
+      {
+        signal: AbortSignal.timeout(10000)
+      }
     );
     
     if (!response.ok) {
@@ -163,6 +195,12 @@ export const fetchMarketChart = async (coinId: string, days: number = 2) => {
     }
     
     const data = await response.json();
+    
+    // Validate the response data
+    if (!data?.prices || !Array.isArray(data.prices)) {
+      throw new Error("Invalid market chart data structure");
+    }
+    
     return data;
   } catch (error) {
     console.error("Error fetching market chart:", error);
