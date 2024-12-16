@@ -8,6 +8,7 @@ import { AddCoinForm } from "./AddCoinForm";
 import { CoinList } from "./CoinList";
 
 interface CoinData {
+  id: string;
   symbol: string;
   amount: string;
   buyPrice: string;
@@ -21,14 +22,24 @@ export const CryptoPortfolio = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [newCoin, setNewCoin] = useState<CoinData>({
+  const [newCoin, setNewCoin] = useState<Omit<CoinData, 'id'>>({
     symbol: "",
     amount: "",
     buyPrice: ""
   });
 
   const handleAddCoin = () => {
-    const updatedPortfolio = [...portfolio, newCoin];
+    if (!newCoin.symbol || !newCoin.amount || !newCoin.buyPrice) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const coin: CoinData = {
+      ...newCoin,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
+
+    const updatedPortfolio = [...portfolio, coin];
     setPortfolio(updatedPortfolio);
     localStorage.setItem("portfolio", JSON.stringify(updatedPortfolio));
     setNewCoin({ symbol: "", amount: "", buyPrice: "" });

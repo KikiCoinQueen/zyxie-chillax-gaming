@@ -3,13 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
+interface CoinData {
+  symbol: string;
+  amount: string;
+  buyPrice: string;
+}
+
 interface AddCoinFormProps {
-  newCoin: {
-    symbol: string;
-    amount: string;
-    buyPrice: string;
-  };
-  setNewCoin: (coin: { symbol: string; amount: string; buyPrice: string }) => void;
+  newCoin: CoinData;
+  setNewCoin: (coin: CoinData) => void;
   onAddCoin: () => void;
 }
 
