@@ -17,7 +17,7 @@ import { OpportunityScanner } from "@/components/scanner/OpportunityScanner";
 import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
 import { CryptoPulse } from "@/components/pulse/CryptoPulse";
 import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
-import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
+import { TokenDiscovery } from "@/components/discovery/TokenDiscovery";
 import { MemePredictor } from "@/components/predictor/MemePredictor";
 import { MemeAnalyzer } from "@/components/ai/MemeAnalyzer";
 import { ZyxieGenerator } from "@/components/ZyxieGenerator";
@@ -31,10 +31,10 @@ const Index = () => {
         <About />
         <MarketMoodRing />
         <ZyxieGenerator />
+        <TokenDiscovery />
         <MemeAnalyzer />
         <MemePredictor />
         <TokenAnalyzer />
-        <MemeDiscovery />
         <CryptoPulse />
         <OpportunityScanner />
         <SolanaMemeCoins />
