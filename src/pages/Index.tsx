@@ -20,33 +20,36 @@ import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 import { MemePredictor } from "@/components/predictor/MemePredictor";
 import { MemeAnalyzer } from "@/components/ai/MemeAnalyzer";
+import { AchievementsProvider } from "@/contexts/AchievementsContext";
 
 const Index = () => {
   return (
-    <main className="min-h-screen">
-      <Hero />
-      <About />
-      <MemeAnalyzer />
-      <MemePredictor />
-      <TokenAnalyzer />
-      <MemeDiscovery />
-      <MarketMoodRing />
-      <CryptoPulse />
-      <OpportunityScanner />
-      <SolanaMemeCoins />
-      <MemeInsights />
-      <MarketSentiment />
-      <MemeLeaderboard />
-      <MemeCalculator />
-      <CryptoPortfolio />
-      <CryptoMarket />
-      <CryptoPriceChart />
-      <CryptoSection />
-      <BlogPreview />
-      <SocialLinks />
-      <ContactForm />
-      <AudioPlayer />
-    </main>
+    <AchievementsProvider>
+      <main className="min-h-screen">
+        <Hero />
+        <About />
+        <MemeAnalyzer />
+        <MemePredictor />
+        <TokenAnalyzer />
+        <MemeDiscovery />
+        <MarketMoodRing />
+        <CryptoPulse />
+        <OpportunityScanner />
+        <SolanaMemeCoins />
+        <MemeInsights />
+        <MarketSentiment />
+        <MemeLeaderboard />
+        <MemeCalculator />
+        <CryptoPortfolio />
+        <CryptoMarket />
+        <CryptoPriceChart />
+        <CryptoSection />
+        <BlogPreview />
+        <SocialLinks />
+        <ContactForm />
+        <AudioPlayer />
+      </main>
+    </AchievementsProvider>
   );
 };
 
