@@ -1,25 +1,13 @@
 import { motion } from "framer-motion";
 import { Gamepad, Bitcoin } from "lucide-react";
-import { useState, useEffect } from "react";
 
 export const Hero = () => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(11);
-  const totalImages = 26;
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev >= totalImages ? 11 : prev + 1));
-    }, 5000); // Change image every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden py-20 px-4">
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-20"
         style={{ 
-          backgroundImage: "url('/th_(1).jpeg')",
+          backgroundImage: "url('/th (1).jpeg')",
           backgroundPosition: "center 20%" 
         }}
       />
