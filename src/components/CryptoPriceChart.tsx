@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -24,8 +25,8 @@ const coins = [
 ];
 
 export const CryptoPriceChart = () => {
-  const [selectedCoin, setSelectedCoin] = React.useState("bitcoin");
-  const [selectedRange, setSelectedRange] = React.useState("7");
+  const [selectedCoin, setSelectedCoin] = useState("bitcoin");
+  const [selectedRange, setSelectedRange] = useState("7");
 
   const fetchPriceHistory = async () => {
     const response = await fetch(
@@ -41,8 +42,10 @@ export const CryptoPriceChart = () => {
     queryKey: ['priceHistory', selectedCoin, selectedRange],
     queryFn: fetchPriceHistory,
     refetchInterval: 300000, // Refetch every 5 minutes
-    onError: () => {
-      toast.error("Failed to fetch price data. Please try again later.");
+    meta: {
+      onError: () => {
+        toast.error("Failed to fetch price data. Please try again later.");
+      }
     }
   });
 
