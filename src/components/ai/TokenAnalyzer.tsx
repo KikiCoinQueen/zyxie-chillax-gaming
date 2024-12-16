@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Brain, Sparkles, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { pipeline, TextClassificationOutput, TextClassificationSingle } from "@huggingface/transformers";
+import { pipeline } from "@huggingface/transformers";
 import { toast } from "sonner";
 
 interface TokenAnalysis {
@@ -13,6 +13,12 @@ interface TokenAnalysis {
   recommendation: string;
 }
 
+// Define the expected shape of the classification result
+interface ClassificationResult {
+  label: string;
+  score: number;
+}
+
 export const TokenAnalyzer = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<TokenAnalysis[]>([]);
@@ -20,7 +26,6 @@ export const TokenAnalyzer = () => {
   const analyzeTokens = async (tokens: any[]) => {
     setIsAnalyzing(true);
     try {
-      // Initialize sentiment analysis pipeline
       const classifier = await pipeline(
         "text-classification",
         "onnx-community/distilbert-base-uncased-finetuned-sst-2-english",
@@ -29,18 +34,18 @@ export const TokenAnalyzer = () => {
 
       const results = await Promise.all(
         tokens.map(async (token) => {
-          // Combine token metrics for analysis
           const text = `${token.baseToken.symbol} price ${token.priceChange24h > 0 ? 'increased' : 'decreased'} 
                        by ${Math.abs(token.priceChange24h)}% with volume ${token.volume24h}`;
           
           const sentimentResult = await classifier(text);
           
-          // Extract label based on result type
-          let sentimentLabel: string;
+          // Extract label based on result type and ensure type safety
+          let sentimentLabel = "NEUTRAL";
           if (Array.isArray(sentimentResult)) {
-            sentimentLabel = (sentimentResult as TextClassificationOutput[])[0]?.label || "NEUTRAL";
+            const firstResult = sentimentResult[0] as ClassificationResult;
+            sentimentLabel = firstResult?.label || "NEUTRAL";
           } else {
-            sentimentLabel = (sentimentResult as TextClassificationSingle).label;
+            sentimentLabel = (sentimentResult as ClassificationResult).label;
           }
           
           const riskScore = calculateRiskScore(token);
