@@ -63,7 +63,7 @@ export const TokenDiscovery = () => {
               
               return {
                 symbol: pair.baseToken.symbol,
-                name: pair.baseToken.name,
+                name: pair.baseToken.name || pair.baseToken.symbol,
                 price: parseFloat(pair.priceUsd),
                 volume24h: parseFloat(pair.volume24h),
                 marketCap: pair.fdv || 0,
