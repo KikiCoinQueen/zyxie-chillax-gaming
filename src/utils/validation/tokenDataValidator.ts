@@ -4,20 +4,9 @@ export const validateTokenData = (data: any): boolean => {
     return false;
   }
   
-  if (!data.pairs) {
-    console.log("No pairs property in data:", data);
+  if (!data.pairs && !Array.isArray(data.pairs)) {
+    console.log("Invalid pairs property in data:", data);
     return false;
-  }
-  
-  if (!Array.isArray(data.pairs)) {
-    console.log("Pairs is not an array:", data.pairs);
-    return false;
-  }
-  
-  // Allow empty arrays but log them
-  if (data.pairs.length === 0) {
-    console.log("Empty pairs array received");
-    return true;
   }
   
   return true;
@@ -29,9 +18,10 @@ export const validatePairData = (pair: any): boolean => {
     return false;
   }
 
-  // Check for required fields with detailed logging
+  // Required fields validation
   const requiredFields = {
     'baseToken.address': pair.baseToken?.address,
+    'baseToken.symbol': pair.baseToken?.symbol,
     'priceUsd': pair.priceUsd,
     'volume24h': pair.volume24h
   };
@@ -45,11 +35,11 @@ export const validatePairData = (pair: any): boolean => {
     return false;
   }
 
-  // Validate numeric values
+  // Numeric validation
   const numericFields = {
-    'fdv': parseFloat(pair.fdv),
     'volume24h': parseFloat(pair.volume24h),
-    'priceChange24h': parseFloat(pair.priceChange24h || '0')
+    'priceChange24h': parseFloat(pair.priceChange24h || '0'),
+    'fdv': parseFloat(pair.fdv || '0')
   };
 
   const invalidNumbers = Object.entries(numericFields)
@@ -61,20 +51,6 @@ export const validatePairData = (pair: any): boolean => {
     return false;
   }
 
-  // Business logic validation
-  const fdv = numericFields.fdv;
-  const volume = numericFields.volume24h;
-  
-  if (fdv >= 10000000) {
-    console.log("FDV too high:", fdv);
-    return false;
-  }
-  
-  if (volume <= 1000) {
-    console.log("Volume too low:", volume);
-    return false;
-  }
-  
   return true;
 };
 

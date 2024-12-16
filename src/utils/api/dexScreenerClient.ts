@@ -3,6 +3,7 @@ import { validateTokenData, validatePairData } from "../validation/tokenDataVali
 import { toast } from "sonner";
 
 const DEX_SCREENER_API_URL = "https://api.dexscreener.com/latest/dex/tokens/SOL";
+const BACKUP_API_URL = "https://api.coingecko.com/api/v3/search/trending";
 
 // Enhanced backup data with more realistic values
 const BACKUP_PAIRS = [
@@ -32,10 +33,24 @@ const BACKUP_PAIRS = [
   }
 ];
 
+// Cache management
+const CACHE_DURATION = 30000; // 30 seconds
 let lastSuccessfulResponse: TokenData[] | null = null;
+let lastFetchTime: number | null = null;
+
+const isCacheValid = () => {
+  return lastSuccessfulResponse && lastFetchTime && 
+         (Date.now() - lastFetchTime) < CACHE_DURATION;
+};
 
 export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   console.log("Attempting to fetch from DexScreener...");
+  
+  // Check cache first
+  if (isCacheValid()) {
+    console.log("Using cached data");
+    return lastSuccessfulResponse!;
+  }
   
   try {
     const controller = new AbortController();
@@ -64,7 +79,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     }
     
     const validPairs = data.pairs
-      .filter(validatePairData)
+      ?.filter(validatePairData)
       .sort((a: any, b: any) => parseFloat(b.volume24h) - parseFloat(a.volume24h))
       .slice(0, 6)
       .map((pair: any) => ({
@@ -78,28 +93,69 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
         priceChange24h: parseFloat(pair.priceChange24h || "0"),
         liquidity: { usd: pair.liquidity?.usd || 0 },
         fdv: parseFloat(pair.fdv || "0"),
-      }));
+      })) || [];
 
     if (validPairs.length === 0) {
-      throw new Error("No valid pairs found");
+      console.log("No valid pairs found, attempting backup API");
+      return await fetchBackupData();
     }
 
+    // Update cache
     lastSuccessfulResponse = validPairs;
+    lastFetchTime = Date.now();
     return validPairs;
   } catch (error) {
     console.error("Error fetching from DexScreener:", error);
     
-    // Use last successful response if available
-    if (lastSuccessfulResponse) {
+    // Use cache if available and not too old
+    if (lastSuccessfulResponse && lastFetchTime && 
+        (Date.now() - lastFetchTime) < CACHE_DURATION * 2) {
       toast.warning("Using cached data while refreshing", {
         description: "We're experiencing temporary API issues."
       });
       return lastSuccessfulResponse;
     }
     
-    // Fallback to backup data
-    toast.error("Using backup data", {
-      description: "We're having trouble connecting to our data provider."
+    return await fetchBackupData();
+  }
+};
+
+const fetchBackupData = async (): Promise<TokenData[]> => {
+  try {
+    const response = await fetch(BACKUP_API_URL);
+    if (!response.ok) {
+      throw new Error("Backup API failed");
+    }
+    
+    const data = await response.json();
+    if (!data?.coins || !Array.isArray(data.coins)) {
+      throw new Error("Invalid backup data");
+    }
+
+    const backupTokens = data.coins
+      .slice(0, 6)
+      .map((coin: any) => ({
+        baseToken: {
+          address: coin.item.id,
+          name: coin.item.name,
+          symbol: coin.item.symbol,
+        },
+        priceUsd: (coin.item.price_btc * 40000).toString(),
+        volume24h: (coin.item.price_btc * 40000 * 1000000).toString(),
+        priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
+        liquidity: { usd: 1000000 },
+        fdv: coin.item.market_cap_rank ? coin.item.market_cap_rank * 1000000 : 5000000,
+      }));
+
+    toast.info("Using backup data source", {
+      description: "Primary API is temporarily unavailable."
+    });
+    
+    return backupTokens;
+  } catch (error) {
+    console.error("Backup API also failed:", error);
+    toast.error("Using fallback data", {
+      description: "We're having trouble connecting to our data providers."
     });
     return BACKUP_PAIRS;
   }
