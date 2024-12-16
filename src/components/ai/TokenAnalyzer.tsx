@@ -34,18 +34,22 @@ export const TokenAnalyzer = () => {
                        by ${Math.abs(token.priceChange24h)}% with volume ${token.volume24h}`;
           
           const sentimentResult = await classifier(text);
-          // Handle both possible return types
-          const sentiment = Array.isArray(sentimentResult) 
-            ? sentimentResult[0].label 
-            : (sentimentResult as TextClassificationSingle).label;
+          
+          // Extract label based on result type
+          let sentimentLabel: string;
+          if (Array.isArray(sentimentResult)) {
+            sentimentLabel = (sentimentResult as TextClassificationOutput[])[0]?.label || "NEUTRAL";
+          } else {
+            sentimentLabel = (sentimentResult as TextClassificationSingle).label;
+          }
           
           const riskScore = calculateRiskScore(token);
           
           return {
             symbol: token.baseToken.symbol,
             riskScore,
-            sentiment,
-            recommendation: generateRecommendation(riskScore, sentiment)
+            sentiment: sentimentLabel,
+            recommendation: generateRecommendation(riskScore, sentimentLabel)
           };
         })
       );
