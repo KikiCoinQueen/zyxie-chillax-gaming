@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { PredictionCard } from "./PredictionCard";
 import { ChallengeCard } from "./ChallengeCard";
 import { useQuery } from "@tanstack/react-query";
-import { pipeline } from "@huggingface/transformers";
+import { pipeline, TextClassificationOutput } from "@huggingface/transformers";
 
 interface Prediction {
   symbol: string;
@@ -25,11 +25,24 @@ interface ClassificationResult {
   score: number;
 }
 
-type ClassifierOutput = ClassificationResult[] | ClassificationResult;
-
 // Type guard to check if the result is an array
-function isClassificationArray(result: ClassifierOutput): result is ClassificationResult[] {
+function isClassificationArray(result: TextClassificationOutput): result is TextClassificationOutput[] {
   return Array.isArray(result);
+}
+
+// Helper function to extract sentiment from classifier output
+function extractSentiment(result: TextClassificationOutput): ClassificationResult {
+  if (isClassificationArray(result)) {
+    const firstResult = result[0];
+    return {
+      label: firstResult.label || "NEUTRAL",
+      score: firstResult.score || 0.5
+    };
+  }
+  return {
+    label: result.label || "NEUTRAL",
+    score: result.score || 0.5
+  };
 }
 
 export const MemePredictor = () => {
@@ -62,9 +75,7 @@ export const MemePredictor = () => {
                     by ${Math.abs(token.priceChange24h)}% with volume ${token.volume24h}`;
       
       const result = await classifier(text);
-      
-      // Handle both array and single result cases
-      const sentiment = isClassificationArray(result) ? result[0] : result;
+      const sentiment = extractSentiment(result);
       
       const prediction: Prediction = {
         symbol: token.baseToken.symbol,
