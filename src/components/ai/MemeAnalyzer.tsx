@@ -10,17 +10,52 @@ import { useQuery } from "@tanstack/react-query";
 import { pipeline } from "@huggingface/transformers";
 import { AnalysisHeader } from "./analysis/AnalysisHeader";
 import { AnalysisProgress } from "./analysis/AnalysisProgress";
+import { AchievementCard } from "../achievements/AchievementCard";
+import { Achievement } from "../achievements/types";
 import { AnalysisResult, TextClassificationOutput, extractSentiment } from "./analysis/types";
+
+const INITIAL_ACHIEVEMENTS: Achievement[] = [
+  {
+    id: "first_analysis",
+    name: "First Analysis",
+    description: "Complete your first token analysis",
+    icon: "🎯",
+    progress: 0,
+    target: 1,
+    reward: 100,
+    completed: false
+  },
+  {
+    id: "analysis_master",
+    name: "Analysis Master",
+    description: "Analyze 5 different tokens",
+    icon: "🏆",
+    progress: 0,
+    target: 5,
+    reward: 500,
+    completed: false
+  },
+  {
+    id: "prediction_streak",
+    name: "Prediction Streak",
+    description: "Make 3 successful predictions in a row",
+    icon: "🎯",
+    progress: 0,
+    target: 3,
+    reward: 300,
+    completed: false
+  }
+];
 
 export const MemeAnalyzer = () => {
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
   const [userScore, setUserScore] = useState(0);
+  const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
 
   const { data: analysisResults, isLoading } = useQuery({
     queryKey: ["memeAnalysis", selectedTokens],
     queryFn: async () => {
       try {
-        // Using a public model that doesn't require authentication
         const classifier = await pipeline(
           "text-classification",
           "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
@@ -74,8 +109,42 @@ export const MemeAnalyzer = () => {
     } else {
       setSelectedTokens(prev => [...prev, token]);
       setUserScore(prev => prev + 10);
+      updateAchievements(token);
       toast.success(`Earned 10 points for analyzing ${token}!`);
     }
+  };
+
+  const updateAchievements = (token: string) => {
+    setAchievements(prev => prev.map(achievement => {
+      if (achievement.completed) return achievement;
+
+      let newProgress = achievement.progress;
+      
+      switch (achievement.id) {
+        case "first_analysis":
+          newProgress = 1;
+          break;
+        case "analysis_master":
+          newProgress = Math.min(achievement.target, selectedTokens.length + 1);
+          break;
+        case "prediction_streak":
+          // This would be updated based on actual prediction accuracy
+          break;
+      }
+
+      const completed = newProgress >= achievement.target;
+      
+      if (completed && !achievement.completed) {
+        toast.success(`Achievement Unlocked: ${achievement.name}!`);
+        setUserScore(prev => prev + achievement.reward);
+      }
+
+      return {
+        ...achievement,
+        progress: newProgress,
+        completed
+      };
+    }));
   };
 
   return (
@@ -168,6 +237,16 @@ export const MemeAnalyzer = () => {
                   userScore={userScore}
                   selectedTokens={selectedTokens}
                 />
+
+                <div className="mt-8 space-y-4">
+                  <h3 className="font-semibold">Achievements</h3>
+                  {achievements.map((achievement) => (
+                    <AchievementCard 
+                      key={achievement.id} 
+                      achievement={achievement}
+                    />
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
