@@ -37,7 +37,7 @@ export const Hero = () => {
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
           <img 
-            src={`/image_(${currentImageIndex}).jpg`}
+            src="/image (1).jpg"
             alt="Zyxie"
             className="w-full h-full object-cover"
           />
