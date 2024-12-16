@@ -11,6 +11,7 @@ import { useAchievements } from "@/contexts/AchievementsContext";
 import { pipeline } from "@huggingface/transformers";
 import { 
   extractSentiment, 
+  TextClassificationOutput,
   TextClassificationSingle
 } from "@/components/predictor/types/prediction";
 
@@ -35,11 +36,13 @@ export const TokenDiscovery = () => {
     queryKey: ["discoveryTokens"],
     queryFn: async () => {
       try {
+        console.log("Fetching token data...");
         const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/SOL");
         if (!response.ok) throw new Error("Failed to fetch tokens");
         const data = await response.json();
         
         if (!data?.pairs) {
+          console.log("No pairs data received:", data);
           throw new Error("No token data available");
         }
 
@@ -58,7 +61,7 @@ export const TokenDiscovery = () => {
                           by ${Math.abs(pair.priceChange24h)}% with volume ${pair.volume24h}`;
               
               const result = await classifier(text);
-              const sentiment = extractSentiment(result);
+              const sentiment = extractSentiment(result as TextClassificationOutput);
               
               return {
                 symbol: pair.baseToken.symbol,
@@ -73,6 +76,7 @@ export const TokenDiscovery = () => {
             })
         );
 
+        console.log("Successfully analyzed tokens:", analyzedTokens.length);
         return analyzedTokens;
       } catch (error) {
         console.error("Error fetching discovery tokens:", error);
