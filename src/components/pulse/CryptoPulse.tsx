@@ -12,6 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts";
+import { fetchMarketChart } from "@/utils/apiUtils";
 
 interface PriceData {
   timestamp: number;
@@ -24,17 +25,7 @@ export const CryptoPulse = () => {
     queryKey: ["cryptoPulse"],
     queryFn: async () => {
       try {
-        const response = await fetch(
-          "https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=2"
-        );
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error("CoinGecko API Error:", errorData);
-          throw new Error(errorData.status?.error_message || "Failed to fetch price data");
-        }
-        
-        const data = await response.json();
+        const data = await fetchMarketChart("solana", 2);
         
         // Take last 24 data points for a day's worth of data
         const last24Hours = data.prices.slice(-24);
