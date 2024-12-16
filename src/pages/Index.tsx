@@ -17,6 +17,7 @@ import { OpportunityScanner } from "@/components/scanner/OpportunityScanner";
 import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
 import { CryptoPulse } from "@/components/pulse/CryptoPulse";
 import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
+import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 
 const Index = () => {
   return (
@@ -24,6 +25,7 @@ const Index = () => {
       <Hero />
       <About />
       <TokenAnalyzer />
+      <MemeDiscovery />
       <MarketMoodRing />
       <CryptoPulse />
       <OpportunityScanner />
