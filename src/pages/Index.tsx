@@ -15,6 +15,7 @@ import { MemeInsights } from "@/components/insights/MemeInsights";
 import { MarketSentiment } from "@/components/insights/MarketSentiment";
 import { OpportunityScanner } from "@/components/scanner/OpportunityScanner";
 import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
+import { CryptoPulse } from "@/components/pulse/CryptoPulse";
 
 const Index = () => {
   return (
@@ -22,6 +23,7 @@ const Index = () => {
       <Hero />
       <About />
       <MarketMoodRing />
+      <CryptoPulse />
       <OpportunityScanner />
       <SolanaMemeCoins />
       <MemeInsights />
