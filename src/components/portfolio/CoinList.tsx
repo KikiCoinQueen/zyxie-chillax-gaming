@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface CoinData {
+interface CoinHolding {
   id: string;
   symbol: string;
   amount: number;
@@ -10,7 +10,7 @@ interface CoinData {
 }
 
 interface CoinListProps {
-  portfolio: CoinData[];
+  portfolio: CoinHolding[];
   prices: Record<string, { usd: number; usd_24h_change?: number }>;
   onRemoveCoin: (id: string) => void;
 }

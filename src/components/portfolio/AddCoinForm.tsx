@@ -9,7 +9,7 @@ interface AddCoinFormProps {
     amount: string;
     buyPrice: string;
   };
-  setNewCoin: (coin: { symbol: string; amount: string; buyPrice: string; }) => void;
+  setNewCoin: (coin: { symbol: string; amount: string; buyPrice: string }) => void;
   onAddCoin: () => void;
 }
 
