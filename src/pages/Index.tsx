@@ -9,6 +9,7 @@ import { CryptoMarket } from "@/components/CryptoMarket";
 import { CryptoPriceChart } from "@/components/CryptoPriceChart";
 import { CryptoPortfolio } from "@/components/CryptoPortfolio";
 import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
+import { MemeCalculator } from "@/components/calculator/MemeCalculator";
 
 const Index = () => {
   return (
@@ -16,6 +17,7 @@ const Index = () => {
       <Hero />
       <About />
       <SolanaMemeCoins />
+      <MemeCalculator />
       <CryptoMarket />
       <CryptoPriceChart />
       <CryptoPortfolio />
