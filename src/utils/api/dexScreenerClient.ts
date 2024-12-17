@@ -18,7 +18,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   
   const cachedData = getCachedData<TokenData[]>("dexscreener");
   if (cachedData) {
-    console.log("Using cached data");
+    console.log("Using cached DexScreener data");
     return cachedData;
   }
   
@@ -32,23 +32,28 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       });
       
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error("DexScreener API error response:", errorText);
+        console.error("DexScreener API error:", res.status, res.statusText);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       return res;
     });
     
     const data = await response.json();
-    console.log("DexScreener API response:", data);
+    console.log("DexScreener raw response:", data);
     
     if (!validateTokenData(data)) {
-      console.warn("Invalid data structure from DexScreener, attempting fallback");
+      console.warn("Invalid data structure from DexScreener, falling back to backup data");
+      return await fetchBackupData();
+    }
+    
+    // If pairs is null or empty, fall back immediately
+    if (!data.pairs || data.pairs.length === 0) {
+      console.warn("No pairs data from DexScreener, falling back to backup data");
       return await fetchBackupData();
     }
     
     const validPairs = data.pairs
-      ?.filter((pair: any) => {
+      .filter((pair: any) => {
         try {
           return validatePairData(pair) && 
                  parseFloat(pair.volume24h) > 1000 && 
@@ -74,7 +79,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       }));
 
     if (!validPairs?.length) {
-      console.warn("No valid pairs found after filtering");
+      console.warn("No valid pairs after filtering, falling back to backup data");
       return await fetchBackupData();
     }
 
@@ -82,17 +87,18 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     lastFetchTime = Date.now();
     setCachedData("dexscreener", validPairs);
     
-    console.log("Successfully fetched and processed pairs:", validPairs.length);
+    console.log("Successfully processed pairs:", validPairs.length);
     return validPairs;
   } catch (error) {
     handleApiError(error, "DexScreener");
     
     if (lastSuccessfulResponse && lastFetchTime && 
         (Date.now() - lastFetchTime) < 30000) {
-      console.log("Using cached data due to API error");
+      console.log("Using last successful response due to API error");
       return lastSuccessfulResponse;
     }
     
+    console.log("Falling back to backup data source");
     return await fetchBackupData();
   }
 };

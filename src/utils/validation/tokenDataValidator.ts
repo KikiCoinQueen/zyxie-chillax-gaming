@@ -4,13 +4,13 @@ export const validateTokenData = (data: any): boolean => {
     return false;
   }
   
-  // Check if data has the pairs property, even if it's null
-  // This confirms we got a valid response structure
+  // Check if data has the pairs property
   if (!('pairs' in data)) {
     console.error("Missing pairs property in data:", data);
     return false;
   }
   
+  // Allow null pairs, as we'll handle that in the client
   return true;
 };
 
@@ -20,62 +20,54 @@ export const validatePairData = (pair: any): boolean => {
     return false;
   }
 
-  // Required fields validation with detailed logging
-  const requiredFields = {
-    'baseToken.address': pair.baseToken?.address,
-    'baseToken.symbol': pair.baseToken?.symbol,
-    'priceUsd': pair.priceUsd,
-    'volume24h': pair.volume24h
-  };
-
-  const missingFields = Object.entries(requiredFields)
-    .filter(([_, value]) => !value)
-    .map(([field]) => field);
-
-  if (missingFields.length > 0) {
-    console.error("Missing required fields:", missingFields.join(', '));
+  // Check for minimum required data
+  if (!pair.baseToken || !pair.baseToken.address) {
+    console.error("Missing baseToken or address:", pair);
     return false;
   }
 
-  // Numeric validation with detailed logging
-  const numericFields = {
-    'volume24h': parseFloat(pair.volume24h),
-    'priceChange24h': parseFloat(pair.priceChange24h || '0'),
-    'fdv': parseFloat(pair.fdv || '0')
-  };
+  // Allow missing or invalid numeric values, we'll handle them with defaults
+  const volume = parseFloat(pair.volume24h || '0');
+  const priceChange = parseFloat(pair.priceChange24h || '0');
+  const fdv = parseFloat(pair.fdv || '0');
 
-  const invalidNumbers = Object.entries(numericFields)
-    .filter(([_, value]) => isNaN(value))
-    .map(([field]) => field);
-
-  if (invalidNumbers.length > 0) {
-    console.error("Invalid numeric values:", invalidNumbers.join(', '));
-    return false;
+  if (isNaN(volume) || isNaN(priceChange) || isNaN(fdv)) {
+    console.warn("Invalid numeric values in pair, using defaults:", {
+      volume,
+      priceChange,
+      fdv
+    });
   }
 
   return true;
 };
 
 export const validateMarketChartData = (data: any): boolean => {
-  if (!data?.prices || !Array.isArray(data.prices)) {
+  if (!data) {
+    console.error("Received null or undefined market chart data");
+    return false;
+  }
+
+  if (!data.prices || !Array.isArray(data.prices)) {
     console.error("Invalid market chart data structure:", data);
     return false;
   }
 
   if (data.prices.length === 0) {
-    console.error("Empty prices array in market chart data");
+    console.warn("Empty prices array in market chart data");
     return false;
   }
 
-  const invalidPoints = data.prices.filter((point: any) => 
-    !Array.isArray(point) || 
-    point.length !== 2 || 
-    typeof point[0] !== 'number' || 
-    typeof point[1] !== 'number'
-  );
+  // Check first and last points to validate structure
+  const [first, last] = [data.prices[0], data.prices[data.prices.length - 1]];
+  const isValidPoint = (point: any) => 
+    Array.isArray(point) && 
+    point.length === 2 && 
+    typeof point[0] === 'number' && 
+    typeof point[1] === 'number';
 
-  if (invalidPoints.length > 0) {
-    console.error("Invalid price points found:", invalidPoints);
+  if (!isValidPoint(first) || !isValidPoint(last)) {
+    console.error("Invalid price point structure:", { first, last });
     return false;
   }
 
