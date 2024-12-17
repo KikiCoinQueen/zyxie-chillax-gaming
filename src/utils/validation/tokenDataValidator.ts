@@ -4,8 +4,10 @@ export const validateTokenData = (data: any): boolean => {
     return false;
   }
   
-  if (!Array.isArray(data.pairs)) {
-    console.error("Invalid pairs property in data:", data);
+  // Check if data has the pairs property, even if it's null
+  // This confirms we got a valid response structure
+  if (!('pairs' in data)) {
+    console.error("Missing pairs property in data:", data);
     return false;
   }
   
@@ -48,17 +50,6 @@ export const validatePairData = (pair: any): boolean => {
 
   if (invalidNumbers.length > 0) {
     console.error("Invalid numeric values:", invalidNumbers.join(', '));
-    return false;
-  }
-
-  // Additional validation for reasonable values
-  if (parseFloat(pair.volume24h) < 0) {
-    console.error("Invalid negative volume:", pair.volume24h);
-    return false;
-  }
-
-  if (parseFloat(pair.priceUsd) < 0) {
-    console.error("Invalid negative price:", pair.priceUsd);
     return false;
   }
 

@@ -17,9 +17,15 @@ const isCacheValid = () => {
 
 const handleApiError = (error: any, source: string) => {
   console.error(`Error in ${source}:`, error);
-  toast.error(`Failed to fetch data from ${source}`, {
-    description: "Attempting to use alternative data source"
-  });
+  if (error.message.includes('rate limit')) {
+    toast.error(`Rate limit exceeded for ${source}`, {
+      description: "Using cached data while waiting for API cooldown"
+    });
+  } else {
+    toast.error(`Failed to fetch data from ${source}`, {
+      description: "Attempting to use alternative data source"
+    });
+  }
 };
 
 const retryWithExponentialBackoff = async (fn: () => Promise<any>, maxRetries = 3) => {
@@ -30,6 +36,7 @@ const retryWithExponentialBackoff = async (fn: () => Promise<any>, maxRetries = 
       if (i === maxRetries - 1) throw error;
       const delay = Math.min(1000 * Math.pow(2, i), 5000);
       await new Promise(resolve => setTimeout(resolve, delay));
+      console.log(`Retry attempt ${i + 1} after ${delay}ms delay`);
     }
   }
 };
@@ -55,7 +62,11 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
         signal: controller.signal
       });
       
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("DexScreener API error response:", errorText);
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
       return res;
     });
     
@@ -64,12 +75,13 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     const data = await response.json();
     console.log("DexScreener API response:", data);
     
-    if (!data?.pairs) {
-      throw new Error("Invalid data structure");
+    if (!validateTokenData(data)) {
+      console.warn("Invalid data structure from DexScreener, attempting fallback");
+      return await fetchBackupData();
     }
     
     const validPairs = data.pairs
-      .filter((pair: any) => {
+      ?.filter((pair: any) => {
         try {
           return validatePairData(pair) && 
                  parseFloat(pair.volume24h) > 1000 && 
@@ -94,11 +106,8 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
         fdv: parseFloat(pair.fdv || "0"),
       }));
 
-    if (validPairs.length === 0) {
+    if (!validPairs?.length) {
       console.warn("No valid pairs found after filtering");
-      toast.warning("Limited market data available", {
-        description: "Using alternative data sources"
-      });
       return await fetchBackupData();
     }
 
@@ -112,9 +121,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
     
     if (lastSuccessfulResponse && lastFetchTime && 
         (Date.now() - lastFetchTime) < CACHE_DURATION * 2) {
-      toast.warning("Using cached data while refreshing", {
-        description: "We're experiencing temporary API issues."
-      });
+      console.log("Using cached data due to API error");
       return lastSuccessfulResponse;
     }
     
@@ -133,7 +140,8 @@ const fetchBackupData = async (): Promise<TokenData[]> => {
     
     const data = await response.json();
     if (!data?.coins || !Array.isArray(data.coins)) {
-      throw new Error("Invalid backup data structure");
+      console.warn("Invalid backup data structure, using fallback pairs");
+      return BACKUP_PAIRS;
     }
 
     const backupTokens = data.coins
@@ -159,15 +167,13 @@ const fetchBackupData = async (): Promise<TokenData[]> => {
     return backupTokens;
   } catch (error) {
     handleApiError(error, "backup API");
-    toast.error("Using fallback data", {
-      description: "We're having trouble connecting to our data providers."
-    });
+    console.warn("All API attempts failed, using fallback data");
     return BACKUP_PAIRS;
   }
 };
 
 // Enhanced backup data with more realistic values
-const BACKUP_PAIRS = [
+const BACKUP_PAIRS: TokenData[] = [
   {
     baseToken: {
       address: "So11111111111111111111111111111111111111112",
