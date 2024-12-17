@@ -1,27 +1,26 @@
 export const validateTokenData = (data: any): boolean => {
   if (!data) {
-    console.error("Received null or undefined data");
+    console.warn("Received null or undefined data");
     return false;
   }
   
   if (!('pairs' in data)) {
-    console.error("Missing pairs property in data:", data);
+    console.warn("Missing pairs property in data:", data);
     return false;
   }
   
-  // Allow null pairs, we'll handle that in the client
   return true;
 };
 
 export const validatePairData = (pair: any): boolean => {
   if (!pair || typeof pair !== 'object') {
-    console.error("Invalid pair object:", pair);
+    console.warn("Invalid pair object:", pair);
     return false;
   }
 
-  // Required fields
+  // Required fields with fallbacks
   if (!pair.baseToken?.address) {
-    console.error("Missing baseToken or address:", pair);
+    console.warn("Missing baseToken or address:", pair);
     return false;
   }
 
@@ -35,12 +34,25 @@ export const validatePairData = (pair: any): boolean => {
     }
   });
 
+  // Ensure required objects exist
+  if (!pair.baseToken.symbol) {
+    pair.baseToken.symbol = "UNKNOWN";
+  }
+  
+  if (!pair.baseToken.name) {
+    pair.baseToken.name = pair.baseToken.symbol;
+  }
+
+  if (!pair.liquidity) {
+    pair.liquidity = { usd: 0 };
+  }
+
   return true;
 };
 
 export const validateMarketChartData = (data: any): boolean => {
   if (!data?.prices || !Array.isArray(data.prices)) {
-    console.error("Invalid market chart data structure:", data);
+    console.warn("Invalid market chart data structure:", data);
     return false;
   }
 
@@ -55,10 +67,9 @@ export const validateMarketChartData = (data: any): boolean => {
     typeof point[0] === 'number' && 
     typeof point[1] === 'number';
 
-  // Check first and last points
   const [first, last] = [data.prices[0], data.prices[data.prices.length - 1]];
   if (!isValidPoint(first) || !isValidPoint(last)) {
-    console.error("Invalid price point structure:", { first, last });
+    console.warn("Invalid price point structure:", { first, last });
     return false;
   }
 

@@ -36,5 +36,17 @@ export const BACKUP_PAIRS: TokenData[] = [
     priceChange24h: 15.5,
     liquidity: { usd: 3000000 },
     fdv: 750000
+  },
+  {
+    baseToken: {
+      address: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+      name: "Raydium",
+      symbol: "RAY"
+    },
+    priceUsd: "0.50",
+    volume24h: "300000",
+    priceChange24h: -2.3,
+    liquidity: { usd: 2000000 },
+    fdv: 400000
   }
 ];

@@ -1,6 +1,9 @@
 import { toast } from "sonner";
 
-export const CACHE_DURATION = 30000; // 30 seconds
+const CACHE_DURATION = 30000; // 30 seconds
+const MAX_RETRIES = 3;
+const BASE_DELAY = 1000;
+const MAX_DELAY = 5000;
 
 interface CacheEntry<T> {
   data: T;
@@ -8,12 +11,6 @@ interface CacheEntry<T> {
 }
 
 const cache = new Map<string, CacheEntry<any>>();
-
-export const isCacheValid = (cacheKey: string): boolean => {
-  const entry = cache.get(cacheKey);
-  if (!entry) return false;
-  return (Date.now() - entry.timestamp) < CACHE_DURATION;
-};
 
 export const getCachedData = <T>(key: string): T | null => {
   const entry = cache.get(key);
@@ -29,7 +26,7 @@ export const getCachedData = <T>(key: string): T | null => {
 };
 
 export const setCachedData = <T>(key: string, data: T) => {
-  if (!data) return; // Don't cache null/undefined data
+  if (!data) return;
   cache.set(key, {
     data,
     timestamp: Date.now()
@@ -51,7 +48,11 @@ export const handleApiError = (error: any, source: string) => {
   }
 };
 
-export const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000) => {
+export const fetchWithTimeout = async (
+  url: string, 
+  options: RequestInit = {}, 
+  timeout = 5000
+): Promise<Response> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   
@@ -78,23 +79,26 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   }
 };
 
-export const retryWithExponentialBackoff = async <T>(
+export const retryWithBackoff = async <T>(
   fn: () => Promise<T>,
-  maxRetries = 3,
-  baseDelay = 1000,
-  maxDelay = 5000
+  retries = MAX_RETRIES,
+  baseDelay = BASE_DELAY,
+  maxDelay = MAX_DELAY
 ): Promise<T> => {
   let lastError: Error;
   
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  for (let attempt = 0; attempt < retries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
-      if (attempt === maxRetries - 1) throw lastError;
+      console.warn(`Attempt ${attempt + 1} failed:`, error);
+      
+      if (attempt === retries - 1) {
+        throw lastError;
+      }
       
       const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
-      console.log(`Retry attempt ${attempt + 1} after ${delay}ms delay`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }

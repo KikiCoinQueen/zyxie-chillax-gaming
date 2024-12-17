@@ -6,7 +6,7 @@ import {
   setCachedData, 
   handleApiError,
   fetchWithTimeout,
-  retryWithExponentialBackoff
+  retryWithBackoff
 } from "./apiHelpers";
 
 const DEX_SCREENER_API_URL = "https://api.dexscreener.com/latest/dex/tokens/SOL";
@@ -23,7 +23,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   }
   
   try {
-    const response = await retryWithExponentialBackoff(async () => {
+    const response = await retryWithBackoff(async () => {
       return await fetchWithTimeout(DEX_SCREENER_API_URL);
     });
     
