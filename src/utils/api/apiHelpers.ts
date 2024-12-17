@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-export const CACHE_DURATION = 15000; // 15 seconds
+export const CACHE_DURATION = 30000; // 30 seconds
 
 interface CacheEntry<T> {
   data: T;
