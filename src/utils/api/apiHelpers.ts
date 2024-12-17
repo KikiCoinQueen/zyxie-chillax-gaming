@@ -11,7 +11,8 @@ const cache = new Map<string, CacheEntry<any>>();
 
 export const isCacheValid = (cacheKey: string): boolean => {
   const entry = cache.get(cacheKey);
-  return !!(entry && (Date.now() - entry.timestamp) < CACHE_DURATION);
+  if (!entry) return false;
+  return (Date.now() - entry.timestamp) < CACHE_DURATION;
 };
 
 export const getCachedData = <T>(key: string): T | null => {
@@ -28,6 +29,7 @@ export const getCachedData = <T>(key: string): T | null => {
 };
 
 export const setCachedData = <T>(key: string, data: T) => {
+  if (!data) return; // Don't cache null/undefined data
   cache.set(key, {
     data,
     timestamp: Date.now()
@@ -36,25 +38,39 @@ export const setCachedData = <T>(key: string, data: T) => {
 
 export const handleApiError = (error: any, source: string) => {
   console.error(`Error in ${source}:`, error);
-  if (error.message.includes('rate limit')) {
+  
+  const message = error?.message || 'Unknown error occurred';
+  if (message.includes('rate limit')) {
     toast.error(`Rate limit exceeded for ${source}`, {
       description: "Using cached data while waiting for API cooldown"
     });
   } else {
-    console.warn(`Failed to fetch data from ${source}`, error);
+    toast.error(`Failed to fetch data from ${source}`, {
+      description: "Falling back to alternative data source"
+    });
   }
 };
 
-export const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
+export const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
   
   try {
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal
+      signal: controller.signal,
+      headers: {
+        ...options.headers,
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
     });
     clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
@@ -62,15 +78,26 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}) =
   }
 };
 
-export const retryWithExponentialBackoff = async (fn: () => Promise<any>, maxRetries = 3) => {
-  for (let i = 0; i < maxRetries; i++) {
+export const retryWithExponentialBackoff = async <T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000,
+  maxDelay = 5000
+): Promise<T> => {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
-      if (i === maxRetries - 1) throw error;
-      const delay = Math.min(1000 * Math.pow(2, i), 5000);
+      lastError = error as Error;
+      if (attempt === maxRetries - 1) throw lastError;
+      
+      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+      console.log(`Retry attempt ${attempt + 1} after ${delay}ms delay`);
       await new Promise(resolve => setTimeout(resolve, delay));
-      console.log(`Retry attempt ${i + 1} after ${delay}ms delay`);
     }
   }
+  
+  throw lastError!;
 };

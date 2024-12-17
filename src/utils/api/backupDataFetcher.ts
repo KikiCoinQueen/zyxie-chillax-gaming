@@ -1,5 +1,5 @@
 import { TokenData } from "@/types/token";
-import { handleApiError, retryWithExponentialBackoff } from "./apiHelpers";
+import { handleApiError, retryWithExponentialBackoff, fetchWithTimeout } from "./apiHelpers";
 import { BACKUP_PAIRS } from "./backupData";
 import { toast } from "sonner";
 
@@ -8,19 +8,15 @@ const BACKUP_API_URL = "https://api.coingecko.com/api/v3/search/trending";
 export const fetchBackupData = async (): Promise<TokenData[]> => {
   try {
     console.log("Attempting to fetch backup data from CoinGecko...");
+    
     const response = await retryWithExponentialBackoff(async () => {
-      const res = await fetch(BACKUP_API_URL);
-      if (!res.ok) {
-        console.error("Backup API failed:", res.status, res.statusText);
-        throw new Error("Backup API failed");
-      }
-      return res;
+      return await fetchWithTimeout(BACKUP_API_URL, {}, 10000);
     });
     
     const data = await response.json();
     console.log("CoinGecko backup data response:", data);
 
-    if (!data?.coins || !Array.isArray(data.coins) || data.coins.length === 0) {
+    if (!data?.coins?.length) {
       console.warn("Invalid or empty backup data structure, using fallback pairs");
       return BACKUP_PAIRS;
     }
@@ -31,12 +27,12 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
         baseToken: {
           address: coin.item.id || "unknown",
           name: coin.item.name || "Unknown Token",
-          symbol: coin.item.symbol || "???",
+          symbol: coin.item.symbol?.toUpperCase() || "???",
         },
         priceUsd: ((coin.item.price_btc || 0) * 40000).toString(),
-        volume24h: ((coin.item.price_btc || 0) * 40000 * 1000000).toString(),
+        volume24h: Math.max(((coin.item.price_btc || 0) * 40000 * 1000000), 1000).toString(),
         priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
-        liquidity: { usd: 1000000 },
+        liquidity: { usd: Math.max(1000000, Math.random() * 5000000) },
         fdv: coin.item.market_cap_rank ? coin.item.market_cap_rank * 1000000 : 5000000,
       }));
 
@@ -47,7 +43,7 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
 
     console.log("Successfully fetched backup data:", backupTokens.length);
     toast.info("Using backup data source", {
-      description: "Primary API is temporarily unavailable."
+      description: "Primary API is temporarily unavailable"
     });
     
     return backupTokens;

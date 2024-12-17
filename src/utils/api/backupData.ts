@@ -24,5 +24,17 @@ export const BACKUP_PAIRS: TokenData[] = [
     priceChange24h: 0.1,
     liquidity: { usd: 5000000 },
     fdv: 500000
+  },
+  {
+    baseToken: {
+      address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+      name: "BONK",
+      symbol: "BONK"
+    },
+    priceUsd: "0.000015",
+    volume24h: "2000000",
+    priceChange24h: 15.5,
+    liquidity: { usd: 3000000 },
+    fdv: 750000
   }
 ];

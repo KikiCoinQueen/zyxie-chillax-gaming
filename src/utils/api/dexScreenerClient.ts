@@ -24,18 +24,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
   
   try {
     const response = await retryWithExponentialBackoff(async () => {
-      const res = await fetchWithTimeout(DEX_SCREENER_API_URL, {
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      if (!res.ok) {
-        console.error("DexScreener API error:", res.status, res.statusText);
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      return res;
+      return await fetchWithTimeout(DEX_SCREENER_API_URL);
     });
     
     const data = await response.json();
@@ -46,8 +35,7 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       return await fetchBackupData();
     }
     
-    // If pairs is null or empty, fall back immediately
-    if (!data.pairs || data.pairs.length === 0) {
+    if (!data.pairs?.length) {
       console.warn("No pairs data from DexScreener, falling back to backup data");
       return await fetchBackupData();
     }
@@ -68,8 +56,8 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       .map((pair: any) => ({
         baseToken: {
           address: pair.baseToken.address,
-          name: pair.baseToken.name || "Unknown Token",
-          symbol: pair.baseToken.symbol || "???",
+          name: pair.baseToken.name || pair.baseToken.symbol || "Unknown Token",
+          symbol: pair.baseToken.symbol?.toUpperCase() || "???",
         },
         priceUsd: pair.priceUsd || "0.00",
         volume24h: pair.volume24h || "0",
