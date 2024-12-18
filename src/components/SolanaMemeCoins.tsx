@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Rocket, TrendingUp, Volume2, DollarSign, ChartLineUp } from "lucide-react";
+import { Rocket, TrendingUp, Volume2, DollarSign, ChartLine } from "lucide-react";
 import { toast } from "sonner";
 import { TokenCard } from "./tokens/TokenCard";
 import { fetchSolanaTokens } from "@/utils/apiUtils";
@@ -126,7 +126,7 @@ export const SolanaMemeCoins = () => {
               <Card className="glass-card">
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-2">
-                    <ChartLineUp className="w-5 h-5 text-primary" />
+                    <ChartLine className="w-5 h-5 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Active Pairs</p>
                       <p className="text-xl font-bold">{tokens.length}</p>
