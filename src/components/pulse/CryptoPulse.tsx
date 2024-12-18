@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Brain, Sparkles, TrendingUp, TrendingDown, Heart } from "lucide-react";
+import { Brain, Heart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
@@ -12,7 +12,6 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts";
-import { fetchMarketChart } from "@/utils/apiUtils";
 
 interface PriceData {
   timestamp: number;
@@ -25,7 +24,15 @@ export const CryptoPulse = () => {
     queryKey: ["cryptoPulse"],
     queryFn: async () => {
       try {
-        const data = await fetchMarketChart("solana", 2);
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=2"
+        );
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch price data");
+        }
+        
+        const data = await response.json();
         
         // Take last 24 data points for a day's worth of data
         const last24Hours = data.prices.slice(-24);
@@ -37,11 +44,17 @@ export const CryptoPulse = () => {
         }));
       } catch (error) {
         console.error("Error fetching price data:", error);
-        toast.error("Failed to fetch price data");
+        toast.error("Failed to fetch price data", {
+          description: "Using cached data if available"
+        });
         return [];
       }
     },
-    refetchInterval: 60000 // Refresh every minute
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 30000, // Consider data stale after 30 seconds
+    cacheTime: 3600000, // Keep cache for 1 hour
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   const formatTime = (timestamp: number) => {
@@ -49,6 +62,15 @@ export const CryptoPulse = () => {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(price);
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -59,7 +81,7 @@ export const CryptoPulse = () => {
             Time: {formatTime(payload[0].payload.timestamp)}
           </p>
           <p className="text-sm">
-            Price: ${payload[0].value.toFixed(2)}
+            Price: {formatPrice(payload[0].value)}
           </p>
           <p className="text-sm">
             Sentiment: {payload[1].value.toFixed(0)}%
@@ -146,22 +168,11 @@ export const CryptoPulse = () => {
                 </div>
               )}
 
-              <div className="mt-6 flex justify-center gap-8">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-muted-foreground">Price</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4 text-secondary" />
-                  <span className="text-sm text-muted-foreground">Sentiment</span>
-                </div>
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                Updated every minute • Powered by CoinGecko
               </div>
             </CardContent>
           </Card>
-
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Updated every minute • Powered by CoinGecko
-          </div>
         </motion.div>
       </div>
     </section>
