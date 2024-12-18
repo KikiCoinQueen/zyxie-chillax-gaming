@@ -1,92 +1,69 @@
 import { TokenData } from "@/types/token";
-import { validateTokenData, validatePairData } from "../validation/tokenDataValidator";
-import { fetchBackupData } from "./backupDataFetcher";
-import { 
-  getCachedData, 
-  setCachedData, 
-  handleApiError,
-  fetchWithTimeout,
-  retryWithBackoff
-} from "./apiHelpers";
+import { validateTokenData } from "../validation/tokenDataValidator";
+import { toast } from "sonner";
 
 const DEX_SCREENER_API_URL = "https://api.dexscreener.com/latest/dex/tokens/SOL";
-let lastSuccessfulResponse: TokenData[] | null = null;
-let lastFetchTime: number | null = null;
+const MAX_RETRIES = 3;
+const INITIAL_DELAY = 1000;
 
-export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
-  console.log("Attempting to fetch from DexScreener...");
-  
-  const cachedData = getCachedData<TokenData[]>("dexscreener");
-  if (cachedData) {
-    console.log("Using cached DexScreener data");
-    return cachedData;
-  }
-  
+const fetchWithRetry = async (url: string, retries = MAX_RETRIES, delay = INITIAL_DELAY): Promise<Response> => {
   try {
-    const response = await retryWithBackoff(async () => {
-      return await fetchWithTimeout(DEX_SCREENER_API_URL);
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
     });
     
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      console.log(`Retrying... ${retries} attempts left`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithRetry(url, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+};
+
+export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
+  try {
+    console.log("Fetching from DexScreener...");
+    const response = await fetchWithRetry(DEX_SCREENER_API_URL);
     const data = await response.json();
-    console.log("DexScreener raw response:", data);
     
     if (!validateTokenData(data)) {
-      console.warn("Invalid data structure from DexScreener, falling back to backup data");
-      return await fetchBackupData();
+      throw new Error("Invalid data structure from DexScreener");
     }
     
-    if (!data.pairs?.length) {
-      console.warn("No pairs data from DexScreener, falling back to backup data");
-      return await fetchBackupData();
-    }
-    
-    const validPairs = data.pairs
+    return data.pairs
       .filter((pair: any) => {
-        try {
-          return validatePairData(pair) && 
-                 parseFloat(pair.volume24h) > 1000 && 
-                 parseFloat(pair.fdv) < 10000000;
-        } catch (error) {
-          console.error("Error validating pair:", error);
-          return false;
-        }
+        const volume = parseFloat(pair.volume24h);
+        const fdv = parseFloat(pair.fdv);
+        return !isNaN(volume) && !isNaN(fdv) && volume > 1000 && fdv < 10000000;
       })
-      .sort((a: any, b: any) => parseFloat(b.volume24h) - parseFloat(a.volume24h))
-      .slice(0, 6)
       .map((pair: any) => ({
         baseToken: {
           address: pair.baseToken.address,
           name: pair.baseToken.name || pair.baseToken.symbol || "Unknown Token",
           symbol: pair.baseToken.symbol?.toUpperCase() || "???",
         },
-        priceUsd: pair.priceUsd || "0.00",
+        priceUsd: pair.priceUsd || "0",
         volume24h: pair.volume24h || "0",
         priceChange24h: parseFloat(pair.priceChange24h || "0"),
         liquidity: { usd: pair.liquidity?.usd || 0 },
         fdv: parseFloat(pair.fdv || "0"),
-      }));
-
-    if (!validPairs?.length) {
-      console.warn("No valid pairs after filtering, falling back to backup data");
-      return await fetchBackupData();
-    }
-
-    lastSuccessfulResponse = validPairs;
-    lastFetchTime = Date.now();
-    setCachedData("dexscreener", validPairs);
-    
-    console.log("Successfully processed pairs:", validPairs.length);
-    return validPairs;
+      }))
+      .slice(0, 6);
   } catch (error) {
-    handleApiError(error, "DexScreener");
-    
-    if (lastSuccessfulResponse && lastFetchTime && 
-        (Date.now() - lastFetchTime) < 30000) {
-      console.log("Using last successful response due to API error");
-      return lastSuccessfulResponse;
-    }
-    
-    console.log("Falling back to backup data source");
-    return await fetchBackupData();
+    console.error("DexScreener fetch failed:", error);
+    toast.error("Failed to fetch from primary source", {
+      description: "Switching to backup data source"
+    });
+    throw error;
   }
 };
