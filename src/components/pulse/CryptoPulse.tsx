@@ -52,7 +52,7 @@ export const CryptoPulse = () => {
     },
     refetchInterval: 60000, // Refresh every minute
     staleTime: 30000, // Consider data stale after 30 seconds
-    cacheTime: 3600000, // Keep cache for 1 hour
+    gcTime: 3600000, // Keep cache for 1 hour (renamed from cacheTime)
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
