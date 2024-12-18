@@ -1,56 +1,26 @@
 import { Hero } from "@/components/Hero";
-import { About } from "@/components/About";
-import { BlogPreview } from "@/components/BlogPreview";
-import { SocialLinks } from "@/components/SocialLinks";
-import { ContactForm } from "@/components/ContactForm";
-import { AudioPlayer } from "@/components/AudioPlayer";
-import { CryptoSection } from "@/components/CryptoSection";
-import { CryptoMarket } from "@/components/CryptoMarket";
-import { CryptoPriceChart } from "@/components/CryptoPriceChart";
-import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
-import { MemeCalculator } from "@/components/calculator/MemeCalculator";
-import { CryptoPortfolio } from "@/components/portfolio/CryptoPortfolio";
-import { MemeLeaderboard } from "@/components/leaderboard/MemeLeaderboard";
-import { MemeInsights } from "@/components/insights/MemeInsights";
-import { MarketSentiment } from "@/components/insights/MarketSentiment";
-import { OpportunityScanner } from "@/components/scanner/OpportunityScanner";
 import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
 import { CryptoPulse } from "@/components/pulse/CryptoPulse";
-import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
-import { TokenDiscovery } from "@/components/discovery/TokenDiscovery";
-import { MemePredictor } from "@/components/predictor/MemePredictor";
-import { MemeAnalyzer } from "@/components/ai/MemeAnalyzer";
-import { ZyxieGenerator } from "@/components/ZyxieGenerator";
 import { AchievementsProvider } from "@/contexts/AchievementsContext";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/navigation/AppSidebar";
 
 const Index = () => {
   return (
     <AchievementsProvider>
-      <main className="min-h-screen">
-        <Hero />
-        <About />
-        <MarketMoodRing />
-        <ZyxieGenerator />
-        <TokenDiscovery />
-        <MemeAnalyzer />
-        <MemePredictor />
-        <TokenAnalyzer />
-        <CryptoPulse />
-        <OpportunityScanner />
-        <SolanaMemeCoins />
-        <MemeInsights />
-        <MarketSentiment />
-        <MemeLeaderboard />
-        <MemeCalculator />
-        <CryptoPortfolio />
-        <CryptoMarket />
-        <CryptoPriceChart />
-        <CryptoSection />
-        <BlogPreview />
-        <SocialLinks />
-        <ContactForm />
-        <AudioPlayer />
-      </main>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <main className="flex-1">
+            <div className="container">
+              <SidebarTrigger className="fixed top-4 left-4 z-50" />
+              <Hero />
+              <MarketMoodRing />
+              <CryptoPulse />
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
     </AchievementsProvider>
   );
 };
