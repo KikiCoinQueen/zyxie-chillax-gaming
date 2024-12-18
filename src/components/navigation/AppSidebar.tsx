@@ -1,4 +1,4 @@
-import { Home, Construction, Activity, Brain, Heart, Search, ChevronRight } from "lucide-react"
+import { Brain, Activity, Search, Heart, ChevronRight, Construction } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -8,7 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const workingFeatures = [
   {
@@ -21,7 +21,12 @@ const workingFeatures = [
     url: "#crypto-pulse",
     icon: Activity,
   },
-]
+  {
+    title: "Solana Memes",
+    url: "#solana-memes",
+    icon: ChevronRight,
+  },
+];
 
 const underConstruction = [
   {
@@ -34,7 +39,7 @@ const underConstruction = [
     url: "#analyzer",
     icon: Heart,
   },
-]
+];
 
 export function AppSidebar() {
   return (
@@ -47,7 +52,7 @@ export function AppSidebar() {
               {workingFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <a href={item.url} className="flex items-center gap-2">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                     </a>
@@ -65,7 +70,7 @@ export function AppSidebar() {
               {underConstruction.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <a href={item.url} className="flex items-center gap-2">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                       <Construction className="w-4 h-4 ml-auto text-yellow-500" />
@@ -78,5 +83,5 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }
