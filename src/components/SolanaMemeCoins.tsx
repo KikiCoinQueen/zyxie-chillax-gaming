@@ -82,64 +82,86 @@ export const SolanaMemeCoins = () => {
   }
 
   return (
-    <section className="py-20 px-4" id="solana-memes">
+    <section className="py-20 px-4 bg-gradient-to-b from-background via-background/50 to-background" id="solana-memes">
       <div className="container max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          className="space-y-8"
         >
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <Rocket className="w-6 h-6 text-primary animate-pulse" />
-            <h2 className="text-3xl font-display font-bold gradient-text text-center">
-              {useFallback ? "Trending Crypto Coins" : "Trending Solana Meme Coins"}
-            </h2>
-            <TrendingUp className="w-6 h-6 text-primary animate-pulse" />
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <Rocket className="w-8 h-8 text-primary animate-pulse" />
+              <h2 className="text-4xl font-display font-bold gradient-text">
+                {useFallback ? "Trending Crypto Coins" : "Solana Meme Gems"}
+              </h2>
+              <TrendingUp className="w-8 h-8 text-primary animate-pulse" />
+            </div>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Discover the hottest meme coins on Solana with real-time price updates, 
+              volume tracking, and market analysis.
+            </p>
           </div>
 
           {!isLoading && tokens && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="glass-card">
-                <CardContent className="flex items-center justify-between p-6">
-                  <div className="flex items-center gap-2">
-                    <Volume2 className="w-5 h-5 text-primary" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="glass-card hover:shadow-lg transition-shadow">
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <Volume2 className="w-8 h-8 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Total Volume</p>
-                      <p className="text-xl font-bold">${getTotalVolume().toLocaleString()}</p>
+                      <p className="text-2xl font-bold">${getTotalVolume().toLocaleString()}</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
               
-              <Card className="glass-card">
-                <CardContent className="flex items-center justify-between p-6">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-primary" />
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Card className="glass-card hover:shadow-lg transition-shadow">
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <DollarSign className="w-8 h-8 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Avg Price</p>
-                      <p className="text-xl font-bold">${getAveragePrice().toFixed(6)}</p>
+                      <p className="text-2xl font-bold">${getAveragePrice().toFixed(6)}</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-              <Card className="glass-card">
-                <CardContent className="flex items-center justify-between p-6">
-                  <div className="flex items-center gap-2">
-                    <ChartLine className="w-5 h-5 text-primary" />
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Card className="glass-card hover:shadow-lg transition-shadow">
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <ChartLine className="w-8 h-8 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Active Pairs</p>
-                      <p className="text-xl font-bold">{tokens.length}</p>
+                      <p className="text-2xl font-bold">{tokens.length}</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </div>
           )}
 
-          <div className="flex justify-end mb-6">
-            <Select value={sortBy} onValueChange={(value: "volume" | "price" | "marketCap") => setSortBy(value)}>
-              <SelectTrigger className="w-[180px]">
+          <div className="flex justify-end">
+            <Select 
+              value={sortBy} 
+              onValueChange={(value: "volume" | "price" | "marketCap") => setSortBy(value)}
+            >
+              <SelectTrigger className="w-[180px] glass-card">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -151,32 +173,55 @@ export const SolanaMemeCoins = () => {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center min-h-[400px]">
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground">Loading latest meme coins...</p>
             </div>
           ) : sortedTokens?.length === 0 ? (
-            <div className="text-center text-muted-foreground py-10">
-              <p>No trending coins found at the moment.</p>
-              <p className="text-sm mt-2">Check back soon for new opportunities!</p>
+            <div className="text-center py-10 space-y-4">
+              <p className="text-xl text-muted-foreground">No trending coins found at the moment.</p>
+              <p className="text-sm">Check back soon for new opportunities!</p>
+              <Button onClick={() => refetch()} variant="outline">
+                Refresh
+              </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedTokens?.map((token: TokenData) => (
-                <TokenCard key={token.baseToken.address} token={token} />
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {sortedTokens?.map((token: TokenData, index: number) => (
+                <motion.div
+                  key={token.baseToken.address}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <TokenCard token={token} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
 
-          <div className="mt-12 text-center">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-12 text-center space-y-2"
+          >
             <p className="text-sm text-muted-foreground">
               {useFallback ? (
                 <>Data provided by CoinGecko • Updated every 30 seconds</>
               ) : (
-                <>Data provided by DEXScreener • Updated every 30 seconds • 
-                <span className="text-primary ml-1">Showing low-cap gems under $10M FDV with active trading</span></>
+                <>Data provided by DEXScreener • Updated every 30 seconds</>
               )}
             </p>
-          </div>
+            <p className="text-xs text-primary">
+              Showing low-cap gems under $10M FDV with active trading
+            </p>
+          </motion.div>
         </motion.div>
       </div>
     </section>
