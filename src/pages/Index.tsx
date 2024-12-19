@@ -5,6 +5,7 @@ import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
 import { CryptoSection } from "@/components/CryptoSection";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 import { MemeInsights } from "@/components/insights/MemeInsights";
+import { TrendingPairs } from "@/components/trending/TrendingPairs";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { motion } from "framer-motion";
@@ -51,6 +52,11 @@ const Index = () => {
             {/* Market Mood Section */}
             <motion.div variants={item} className="relative z-10">
               <MarketMoodRing />
+            </motion.div>
+
+            {/* Trending Pairs Section */}
+            <motion.div variants={item} className="relative z-10">
+              <TrendingPairs />
             </motion.div>
 
             {/* Crypto Pulse Section */}
