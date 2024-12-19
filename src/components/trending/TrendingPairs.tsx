@@ -145,7 +145,7 @@ export const TrendingPairs = () => {
 
           <div className="mt-12 text-center">
             <p className="text-sm text-muted-foreground">
-              Data updates every 30 seconds • Showing pairs with 24h volume > $10,000 • 
+              Data updates every 30 seconds • Showing pairs with 24h volume &gt; $10,000 • 
               <span className="text-primary ml-1">Top 6 trending pairs</span>
             </p>
           </div>

@@ -6,6 +6,7 @@ import { CryptoSection } from "@/components/CryptoSection";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 import { MemeInsights } from "@/components/insights/MemeInsights";
 import { TrendingPairs } from "@/components/trending/TrendingPairs";
+import { MarketSentiment } from "@/components/insights/MarketSentiment";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { motion } from "framer-motion";
@@ -44,42 +45,38 @@ const Index = () => {
             animate="show"
             className="container mx-auto px-4 space-y-16 py-8"
           >
-            {/* Hero Section with enhanced animation */}
             <motion.div variants={item} className="relative z-10">
               <Hero />
             </motion.div>
 
-            {/* Market Mood Section */}
             <motion.div variants={item} className="relative z-10">
               <MarketMoodRing />
             </motion.div>
 
-            {/* Trending Pairs Section */}
             <motion.div variants={item} className="relative z-10">
               <TrendingPairs />
             </motion.div>
 
-            {/* Crypto Pulse Section */}
+            <motion.div variants={item} className="relative z-10">
+              <MarketSentiment />
+            </motion.div>
+
             <motion.div variants={item} className="relative z-10">
               <CryptoPulse />
             </motion.div>
 
-            {/* Solana Meme Coins Section */}
             <motion.div variants={item} className="relative z-10">
               <SolanaMemeCoins />
             </motion.div>
 
-            {/* Crypto Section */}
             <motion.div variants={item} className="relative z-10">
               <CryptoSection />
             </motion.div>
 
-            {/* Meme Discovery Section */}
             <motion.div variants={item} className="relative z-10">
               <MemeDiscovery />
             </motion.div>
 
-            {/* Meme Insights Section */}
             <motion.div variants={item} className="relative z-10">
               <MemeInsights />
             </motion.div>
