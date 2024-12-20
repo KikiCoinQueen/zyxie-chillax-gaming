@@ -5,11 +5,11 @@ import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
 import { CryptoSection } from "@/components/CryptoSection";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 import { MemeInsights } from "@/components/insights/MemeInsights";
-import { MarketSentiment } from "@/components/insights/MarketSentiment";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { HotPairsScanner } from "@/components/scanner/HotPairsScanner";
 import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Index = () => {
   const container = {
@@ -54,35 +54,87 @@ const Index = () => {
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <MarketMoodRing />
+              <Card className="p-6">
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">🎯 Market Mood Ring</h3>
+                  <p className="text-muted-foreground">
+                    This component was intended to display real-time market sentiment analysis using 
+                    volume, price action, and social signals to gauge overall market mood.
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <TrendingPairs />
+              <Card className="p-6">
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">📊 Market Sentiment</h3>
+                  <p className="text-muted-foreground">
+                    This section was designed to analyze and display market sentiment for top tokens,
+                    showing bullish/bearish indicators based on price action and volume metrics.
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <MarketSentiment />
+              <Card className="p-6">
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">⚡ Crypto Pulse</h3>
+                  <p className="text-muted-foreground">
+                    Originally planned to show real-time market movements and significant price actions
+                    across different cryptocurrencies.
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <CryptoPulse />
+              <Card className="p-6">
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">🚀 Solana Meme Coins</h3>
+                  <p className="text-muted-foreground">
+                    This section was meant to track and display trending meme coins on the Solana network,
+                    helping users discover new opportunities.
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <SolanaMemeCoins />
+              <Card className="p-6">
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">💎 Crypto Section</h3>
+                  <p className="text-muted-foreground">
+                    A comprehensive overview of cryptocurrency market data and trends was planned for
+                    this section.
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <CryptoSection />
+              <Card className="p-6">
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">🔍 Meme Discovery</h3>
+                  <p className="text-muted-foreground">
+                    This feature was intended to help users discover new meme coins using AI-powered
+                    analysis and community metrics.
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <MemeDiscovery />
-            </motion.div>
-
-            <motion.div variants={item} className="relative z-10">
-              <MemeInsights />
+              <Card className="p-6">
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">📈 Meme Insights</h3>
+                  <p className="text-muted-foreground">
+                    Planned to provide detailed insights and analysis of meme coin performance and
+                    market trends.
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
           </motion.div>
 
