@@ -23,7 +23,7 @@ interface HotPair {
   createdAt: number;
 }
 
-const DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/pairs/solana/";
+const DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/tokens/SOL";
 
 export const HotPairsScanner = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
