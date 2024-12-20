@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 
 interface SearchBarProps {
   searchTerm: string;
@@ -12,33 +13,36 @@ export const SearchBar = ({
   searchTerm,
   selectedRisk,
   onSearchChange,
-  onRiskSelect,
+  onRiskSelect
 }: SearchBarProps) => {
+  const riskLevels = [1, 2, 3, 4, 5];
+
   return (
-    <div className="max-w-xl mx-auto mb-8">
-      <div className="flex gap-4 mb-4">
+    <div className="flex flex-col md:flex-row gap-4 mb-8">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input
-          placeholder="Search by symbol..."
+          type="text"
+          placeholder="Search tokens..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="glass-card"
+          className="pl-10"
         />
-        <Button
-          variant="outline"
-          onClick={() => onRiskSelect(null)}
-          className={!selectedRisk ? "bg-primary/20" : ""}
-        >
-          All Risks
-        </Button>
       </div>
-      
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {[1, 2, 3, 4, 5].map((risk) => (
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant={selectedRisk === null ? "default" : "outline"}
+          onClick={() => onRiskSelect(null)}
+          size="sm"
+        >
+          All
+        </Button>
+        {riskLevels.map((risk) => (
           <Button
             key={risk}
-            variant="outline"
+            variant={selectedRisk === risk ? "default" : "outline"}
             onClick={() => onRiskSelect(risk)}
-            className={selectedRisk === risk ? "bg-primary/20" : ""}
+            size="sm"
           >
             Risk {risk}
           </Button>

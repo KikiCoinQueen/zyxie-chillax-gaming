@@ -1,13 +1,8 @@
 import { Hero } from "@/components/Hero";
-import { MarketMoodRing } from "@/components/mood/MarketMoodRing";
-import { CryptoPulse } from "@/components/pulse/CryptoPulse";
-import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
-import { CryptoSection } from "@/components/CryptoSection";
-import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
-import { MemeInsights } from "@/components/insights/MemeInsights";
+import { HotPairsScanner } from "@/components/scanner/HotPairsScanner";
+import { TokenDiscovery } from "@/components/discovery/TokenDiscovery";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
-import { HotPairsScanner } from "@/components/scanner/HotPairsScanner";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -51,6 +46,10 @@ const Index = () => {
 
             <motion.div variants={item} className="relative z-10">
               <HotPairsScanner />
+            </motion.div>
+
+            <motion.div variants={item} className="relative z-10">
+              <TokenDiscovery />
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
@@ -108,30 +107,6 @@ const Index = () => {
                   <p className="text-muted-foreground">
                     A comprehensive overview of cryptocurrency market data and trends was planned for
                     this section.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={item} className="relative z-10">
-              <Card className="p-6">
-                <CardContent>
-                  <h3 className="text-xl font-bold mb-4">🔍 Meme Discovery</h3>
-                  <p className="text-muted-foreground">
-                    This feature was intended to help users discover new meme coins using AI-powered
-                    analysis and community metrics.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={item} className="relative z-10">
-              <Card className="p-6">
-                <CardContent>
-                  <h3 className="text-xl font-bold mb-4">📈 Meme Insights</h3>
-                  <p className="text-muted-foreground">
-                    Planned to provide detailed insights and analysis of meme coin performance and
-                    market trends.
                   </p>
                 </CardContent>
               </Card>
