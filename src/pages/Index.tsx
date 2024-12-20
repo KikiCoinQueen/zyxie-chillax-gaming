@@ -5,10 +5,10 @@ import { SolanaMemeCoins } from "@/components/SolanaMemeCoins";
 import { CryptoSection } from "@/components/CryptoSection";
 import { MemeDiscovery } from "@/components/discovery/MemeDiscovery";
 import { MemeInsights } from "@/components/insights/MemeInsights";
-import { TrendingPairs } from "@/components/trending/TrendingPairs";
 import { MarketSentiment } from "@/components/insights/MarketSentiment";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
+import { HotPairsScanner } from "@/components/scanner/HotPairsScanner";
 import { motion } from "framer-motion";
 
 const Index = () => {
@@ -47,6 +47,10 @@ const Index = () => {
           >
             <motion.div variants={item} className="relative z-10">
               <Hero />
+            </motion.div>
+
+            <motion.div variants={item} className="relative z-10">
+              <HotPairsScanner />
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
