@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Volume2, ArrowUpDown, AlertTriangle } from "lucide-react";
+import { TrendingUp, Volume2, ArrowUpDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -30,7 +30,7 @@ export const TrendingPairs = () => {
       try {
         console.log("Fetching trending pairs...");
         const response = await fetch(
-          "https://api.dexscreener.com/latest/dex/pairs/solana/top",
+          "https://api.dexscreener.com/latest/dex/tokens/SOL",
           {
             headers: {
               'Accept': 'application/json',
@@ -44,22 +44,46 @@ export const TrendingPairs = () => {
         }
         
         const data = await response.json();
-        console.log("Trending pairs response:", data);
+        console.log("API Response:", data);
         
-        if (!data?.pairs) {
-          throw new Error("No pairs data available");
+        if (!data?.pairs || !Array.isArray(data.pairs)) {
+          console.log("Invalid response structure:", data);
+          return [];
         }
         
         return data.pairs
-          .filter((pair: any) => parseFloat(pair.volume24h) > 10000)
-          .slice(0, 6);
+          .filter((pair: any) => {
+            const volume = parseFloat(pair.volume24h || '0');
+            const hasRequiredFields = pair.baseToken?.symbol && pair.priceUsd && pair.volume24h;
+            return hasRequiredFields && volume > 10000;
+          })
+          .sort((a: any, b: any) => parseFloat(b.volume24h) - parseFloat(a.volume24h))
+          .slice(0, 6)
+          .map((pair: any) => ({
+            baseToken: {
+              symbol: pair.baseToken.symbol,
+              name: pair.baseToken.name || pair.baseToken.symbol
+            },
+            priceUsd: pair.priceUsd,
+            volume24h: pair.volume24h,
+            priceChange24h: parseFloat(pair.priceChange24h || '0'),
+            txns24h: {
+              buys: pair.txns24h?.buys || 0,
+              sells: pair.txns24h?.sells || 0
+            }
+          }));
       } catch (error) {
         console.error("Error fetching trending pairs:", error);
         toast.error("Failed to fetch trending pairs");
         return [];
       }
     },
-    refetchInterval: 30000
+    refetchInterval: 30000,
+    meta: {
+      onError: () => {
+        toast.error("Failed to fetch trending pairs");
+      }
+    }
   });
 
   return (
@@ -82,14 +106,14 @@ export const TrendingPairs = () => {
             <div className="flex justify-center items-center min-h-[400px]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
-          ) : pairs?.length === 0 ? (
+          ) : !pairs?.length ? (
             <div className="text-center text-muted-foreground py-10">
               <p>No trending pairs found at the moment.</p>
               <p className="text-sm mt-2">Check back soon for new opportunities!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pairs?.map((pair: TrendingPair) => (
+              {pairs.map((pair: TrendingPair) => (
                 <Card key={pair.baseToken.symbol} className="glass-card hover:scale-[1.02] transition-transform">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
