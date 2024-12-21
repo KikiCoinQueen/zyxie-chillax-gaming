@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Twitter } from "lucide-react";
 import { CoinAnalysis } from "@/utils/ai/coinAnalysis";
 import { motion } from "framer-motion";
 import { formatPercentage, formatMarketCap } from "@/utils/formatters";
@@ -9,10 +11,17 @@ interface CoinAnalysisCardProps {
   symbol: string;
   marketCap?: number;
   priceChange?: number;
+  rank: number;
 }
 
-export const CoinAnalysisCard = ({ analysis, symbol, marketCap, priceChange }: CoinAnalysisCardProps) => {
-  const getRiskColor = (risk: string) => {
+export const CoinAnalysisCard = ({
+  analysis,
+  symbol,
+  marketCap,
+  priceChange,
+  rank
+}: CoinAnalysisCardProps) => {
+  const getRiskColor = (risk: string): string => {
     switch (risk) {
       case "Very High": return "text-red-500";
       case "High": return "text-orange-500";
@@ -21,26 +30,24 @@ export const CoinAnalysisCard = ({ analysis, symbol, marketCap, priceChange }: C
     }
   };
 
-  const getDetailedRecommendation = (recommendation: string) => {
-    switch (recommendation) {
-      case "Strong Potential":
-        return "This token shows strong growth potential based on market activity and sentiment analysis. Consider researching further.";
-      case "Worth Watching":
-        return "The token demonstrates promising indicators. Keep an eye on its performance and market trends.";
-      case "DYOR":
-        return "Mixed signals detected. Thoroughly research this token's fundamentals and team before making any decisions.";
-      case "Caution":
-        return "Exercise extreme caution. Current market indicators suggest high volatility and risk factors.";
-      default:
-        return recommendation;
-    }
-  };
-
   return (
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>{symbol} Analysis</span>
+          <div className="flex items-center gap-2">
+            <span>#{rank}</span>
+            <span>{symbol}</span>
+            {analysis.twitterHandle && (
+              <a
+                href={`https://twitter.com/${analysis.twitterHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80"
+              >
+                <Twitter className="w-4 h-4" />
+              </a>
+            )}
+          </div>
           <Badge variant="outline" className={getRiskColor(analysis.riskLevel)}>
             {analysis.riskLevel} Risk
           </Badge>
@@ -73,14 +80,22 @@ export const CoinAnalysisCard = ({ analysis, symbol, marketCap, priceChange }: C
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Estimated Age</span>
+            <span className="text-sm text-muted-foreground">Age</span>
             <span className="font-medium">{analysis.creationDate}</span>
           </div>
 
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span>Interest Score</span>
+              <span className="font-mono">{analysis.interestScore.toFixed(1)}/5</span>
+            </div>
+            <Progress value={analysis.interestScore * 20} className="h-1.5" />
+          </div>
+
           <div className="pt-4 border-t border-border/50">
-            <p className="text-sm font-medium mb-2">AI Recommendation</p>
+            <p className="text-sm font-medium mb-2">AI Analysis</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {getDetailedRecommendation(analysis.recommendation)}
+              {analysis.recommendation}
             </p>
           </div>
         </motion.div>

@@ -8,25 +8,6 @@ import { toast } from "sonner";
 import { CoinAnalysisCard } from "./CoinAnalysisCard";
 import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 
-interface TrendingCoin {
-  item: {
-    id: string;
-    coin_id: number;
-    name: string;
-    symbol: string;
-    market_cap_rank: number;
-    thumb: string;
-    score: number;
-    data: {
-      price: string;
-      price_change_percentage_24h: number | null;
-      market_cap: string;
-      total_volume: string;
-      sparkline: string;
-    };
-  };
-}
-
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
 
@@ -34,6 +15,7 @@ export const TrendingCoins = () => {
     queryKey: ["trendingCoins"],
     queryFn: async () => {
       try {
+        // Fetch trending coins
         const response = await fetch(
           "https://api.coingecko.com/api/v3/search/trending",
           {
@@ -54,28 +36,54 @@ export const TrendingCoins = () => {
           throw new Error("Invalid response structure");
         }
 
-        // Analyze each coin
+        // Fetch detailed data for each coin
         const analyzedCoins = await Promise.all(
           data.coins.map(async (coin: TrendingCoin) => {
-            const marketCap = parseFloat(coin.item.data?.market_cap || '0');
-            const priceChange = coin.item.data?.price_change_percentage_24h || 0;
-            const volume = parseFloat(coin.item.data?.total_volume || '0');
+            try {
+              const detailResponse = await fetch(
+                `https://api.coingecko.com/api/v3/coins/${coin.item.id}?localization=false&tickers=false&community_data=false&developer_data=false`
+              );
+              
+              const coinData = await detailResponse.json();
+              
+              const marketCap = coinData.market_data?.market_cap?.usd;
+              const priceChange = coinData.market_data?.price_change_percentage_24h;
+              const volume = coinData.market_data?.total_volume?.usd;
 
-            const analysis = await analyzeCoin(
-              coin.item.name,
-              priceChange,
-              marketCap,
-              volume
-            );
+              const analysis = await analyzeCoin(
+                coin.item.name,
+                priceChange,
+                marketCap,
+                volume,
+                coinData
+              );
 
-            return {
-              ...coin,
-              analysis
-            };
+              return {
+                ...coin,
+                analysis,
+                detailedData: coinData
+              };
+            } catch (error) {
+              console.error(`Error fetching details for ${coin.item.id}:`, error);
+              const analysis = await analyzeCoin(
+                coin.item.name,
+                coin.item.data?.price_change_percentage_24h || 0,
+                parseFloat(coin.item.data?.market_cap || '0'),
+                parseFloat(coin.item.data?.total_volume || '0')
+              );
+              
+              return {
+                ...coin,
+                analysis
+              };
+            }
           })
         );
         
-        return analyzedCoins;
+        // Sort by interest score
+        return analyzedCoins.sort((a, b) => 
+          (b.analysis?.interestScore || 0) - (a.analysis?.interestScore || 0)
+        );
       } catch (error) {
         console.error("Error fetching trending coins:", error);
         toast.error("Failed to fetch trending coins");
@@ -84,6 +92,8 @@ export const TrendingCoins = () => {
     },
     refetchInterval: 60000
   });
+
+  // ... keep existing code (loading and error states)
 
   return (
     <section className="py-20 px-4" id="trending-coins">
@@ -112,7 +122,7 @@ export const TrendingCoins = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {coins.slice(0, 6).map((coin: any) => (
+              {coins.slice(0, 6).map((coin: any, index: number) => (
                 <div key={coin.item.id} className="space-y-4">
                   <Card 
                     className="glass-card hover:scale-[1.02] transition-transform cursor-pointer"
@@ -141,8 +151,9 @@ export const TrendingCoins = () => {
                     <CoinAnalysisCard
                       analysis={coin.analysis}
                       symbol={coin.item.symbol}
-                      marketCap={parseFloat(coin.item.data?.market_cap || '0')}
-                      priceChange={coin.item.data?.price_change_percentage_24h}
+                      marketCap={coin.detailedData?.market_data?.market_cap?.usd}
+                      priceChange={coin.detailedData?.market_data?.price_change_percentage_24h}
+                      rank={index + 1}
                     />
                   )}
                 </div>
