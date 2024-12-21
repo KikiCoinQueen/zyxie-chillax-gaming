@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Rocket, Star, AlertTriangle } from "lucide-react";
+import { TrendingUp, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { CoinAnalysisCard } from "./CoinAnalysisCard";
+import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 
 interface TrendingCoin {
   item: {
@@ -27,13 +28,12 @@ interface TrendingCoin {
 }
 
 export const TrendingCoins = () => {
-  const [timeframe] = useState("24h");
+  const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
 
   const { data: coins, isLoading } = useQuery({
-    queryKey: ["trendingCoins", timeframe],
+    queryKey: ["trendingCoins"],
     queryFn: async () => {
       try {
-        console.log("Fetching trending coins from CoinGecko...");
         const response = await fetch(
           "https://api.coingecko.com/api/v3/search/trending",
           {
@@ -49,48 +49,41 @@ export const TrendingCoins = () => {
         }
         
         const data = await response.json();
-        console.log("CoinGecko Response:", data);
         
         if (!data?.coins || !Array.isArray(data.coins)) {
-          console.log("Invalid response structure:", data);
-          return [];
+          throw new Error("Invalid response structure");
         }
+
+        // Analyze each coin
+        const analyzedCoins = await Promise.all(
+          data.coins.map(async (coin: TrendingCoin) => {
+            const marketCap = parseFloat(coin.item.data?.market_cap || '0');
+            const priceChange = coin.item.data?.price_change_percentage_24h || 0;
+            const volume = parseFloat(coin.item.data?.total_volume || '0');
+
+            const analysis = await analyzeCoin(
+              coin.item.name,
+              priceChange,
+              marketCap,
+              volume
+            );
+
+            return {
+              ...coin,
+              analysis
+            };
+          })
+        );
         
-        return data.coins;
+        return analyzedCoins;
       } catch (error) {
         console.error("Error fetching trending coins:", error);
         toast.error("Failed to fetch trending coins");
         return [];
       }
     },
-    refetchInterval: 60000, // Refresh every minute
-    meta: {
-      onError: () => {
-        toast.error("Failed to fetch trending coins");
-      }
-    }
+    refetchInterval: 60000
   });
-
-  const calculateSentiment = (coin: TrendingCoin) => {
-    const score = typeof coin.item.score === 'number' ? coin.item.score : 0;
-    const priceChange = typeof coin.item.data?.price_change_percentage_24h === 'number' 
-      ? coin.item.data.price_change_percentage_24h 
-      : 0;
-    const marketCapRank = typeof coin.item.market_cap_rank === 'number' 
-      ? coin.item.market_cap_rank 
-      : 100;
-    
-    // Weighted scoring system
-    const scoreWeight = 0.4;
-    const priceWeight = 0.3;
-    const rankWeight = 0.3;
-    
-    const normalizedScore = (score * scoreWeight) +
-      ((priceChange > 0 ? 1 : 0) * priceWeight) +
-      ((100 - marketCapRank) / 100 * rankWeight);
-    
-    return Math.min(Math.max(normalizedScore * 100, 0), 100);
-  };
 
   return (
     <section className="py-20 px-4" id="trending-coins">
@@ -101,9 +94,9 @@ export const TrendingCoins = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-center gap-3 mb-12">
-            <Rocket className="w-6 h-6 text-primary animate-pulse" />
+            <TrendingUp className="w-6 h-6 text-primary animate-pulse" />
             <h2 className="text-3xl font-display font-bold gradient-text text-center">
-              Trending Gems
+              AI-Analyzed Trending Coins
             </h2>
             <Star className="w-6 h-6 text-primary animate-pulse" />
           </div>
@@ -118,18 +111,13 @@ export const TrendingCoins = () => {
               <p className="text-sm mt-2">Check back soon for new opportunities!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {coins.slice(0, 6).map((coin: TrendingCoin) => {
-                const sentiment = calculateSentiment(coin);
-                const priceChange = typeof coin.item.data?.price_change_percentage_24h === 'number' 
-                  ? coin.item.data.price_change_percentage_24h 
-                  : 0;
-                const score = typeof coin.item.score === 'number' 
-                  ? coin.item.score 
-                  : 0;
-
-                return (
-                  <Card key={coin.item.id} className="glass-card hover:scale-[1.02] transition-transform">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {coins.slice(0, 6).map((coin: any) => (
+                <div key={coin.item.id} className="space-y-4">
+                  <Card 
+                    className="glass-card hover:scale-[1.02] transition-transform cursor-pointer"
+                    onClick={() => setSelectedCoin(coin.item.id)}
+                  >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -145,58 +133,26 @@ export const TrendingCoins = () => {
                             </Badge>
                           </div>
                         </div>
-                        <AlertTriangle 
-                          className={`w-5 h-5 ${sentiment > 70 ? 'text-green-500' : 'text-yellow-500'}`} 
-                        />
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Market Sentiment</p>
-                          <div className="flex items-center gap-2">
-                            <Progress value={sentiment} className="h-2" />
-                            <span className="text-sm font-mono">
-                              {sentiment.toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground">24h Change</p>
-                            <p className={`text-sm ${priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                              {priceChange.toFixed(2)}%
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Trend Score</p>
-                            <p className="text-sm font-mono">
-                              {score.toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <a 
-                          href={`https://www.coingecko.com/en/coins/${coin.item.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-center text-sm text-primary hover:underline mt-2"
-                        >
-                          View on CoinGecko →
-                        </a>
-                      </div>
-                    </CardContent>
                   </Card>
-                );
-              })}
+
+                  {selectedCoin === coin.item.id && (
+                    <CoinAnalysisCard
+                      analysis={coin.analysis}
+                      symbol={coin.item.symbol}
+                      marketCap={parseFloat(coin.item.data?.market_cap || '0')}
+                      priceChange={coin.item.data?.price_change_percentage_24h}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
           <div className="mt-12 text-center">
             <p className="text-sm text-muted-foreground">
-              Data updates every minute • Powered by CoinGecko • 
-              <span className="text-primary ml-1">Top 6 trending coins</span>
+              Data updates every minute • AI-powered analysis • Not financial advice
             </p>
           </div>
         </motion.div>
