@@ -1,6 +1,6 @@
 import { Hero } from "@/components/Hero";
-import { HotPairsScanner } from "@/components/scanner/HotPairsScanner";
 import { TokenDiscovery } from "@/components/discovery/TokenDiscovery";
+import { TrendingCoins } from "@/components/trending/TrendingCoins";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { motion } from "framer-motion";
@@ -45,7 +45,7 @@ const Index = () => {
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
-              <HotPairsScanner />
+              <TrendingCoins />
             </motion.div>
 
             <motion.div variants={item} className="relative z-10">
