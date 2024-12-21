@@ -1,4 +1,5 @@
 import { pipeline } from "@huggingface/transformers";
+import { TextClassificationOutput, extractSentiment } from "@/components/ai/analysis/types";
 
 export interface CoinAnalysis {
   sentiment: number;
@@ -17,13 +18,13 @@ export const analyzeCoin = async (
   try {
     const classifier = await pipeline(
       "text-classification",
-      "onnx-community/distilbert-base-uncased-finetuned-sst-2-english",
+      "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
       { device: "webgpu" }
     );
 
     const analysisText = `${name} has a price change of ${priceChange}% with market cap of ${marketCap} and volume of ${volume}`;
-    const result = await classifier(analysisText);
-    const sentiment = Array.isArray(result) ? result[0].score : 0;
+    const result = await classifier(analysisText) as TextClassificationOutput;
+    const sentiment = extractSentiment(result).score;
 
     // Simple rule-based analysis
     const riskLevel = getRiskLevel(marketCap, volume, priceChange);
@@ -73,7 +74,6 @@ const getMarketTrend = (priceChange: number, volume: number): string => {
 
 const estimateCreationDate = (marketCap: number, volume: number): string => {
   // Simple heuristic based on market cap and volume
-  const today = new Date();
   if (marketCap < 1000000 && volume < 10000) {
     return "Last 7 days";
   } else if (marketCap < 5000000 && volume < 50000) {
