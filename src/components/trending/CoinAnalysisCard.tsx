@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CoinAnalysis } from "@/utils/ai/coinAnalysis";
 import { motion } from "framer-motion";
+import { formatPercentage } from "@/utils/formatters";
 
 interface CoinAnalysisCardProps {
   analysis: CoinAnalysis;
@@ -46,8 +47,8 @@ export const CoinAnalysisCard = ({ analysis, symbol, marketCap, priceChange }: C
 
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Price Change</span>
-            <span className={`font-mono ${priceChange && priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {priceChange?.toFixed(2)}%
+            <span className={`font-mono ${typeof priceChange === 'number' && priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {typeof priceChange === 'number' ? formatPercentage(priceChange) : 'N/A'}
             </span>
           </div>
 
