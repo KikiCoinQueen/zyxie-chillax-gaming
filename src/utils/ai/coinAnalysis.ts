@@ -1,5 +1,6 @@
 import { pipeline } from "@huggingface/transformers";
 import { TextClassificationOutput, extractSentiment } from "@/components/ai/analysis/types";
+import { toast } from "sonner";
 
 export interface CoinAnalysis {
   sentiment: number;
@@ -18,8 +19,11 @@ export const analyzeCoin = async (
   try {
     const classifier = await pipeline(
       "text-classification",
-      "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
-      { device: "webgpu" }
+      "Xenova/tiny-bert-sst2-distilled",
+      { 
+        quantized: true,
+        device: "cpu" // Fallback to CPU for better compatibility
+      }
     );
 
     const analysisText = `${name} has a price change of ${priceChange}% with market cap of ${marketCap} and volume of ${volume}`;
@@ -40,12 +44,18 @@ export const analyzeCoin = async (
     };
   } catch (error) {
     console.error("Error analyzing coin:", error);
+    toast.error("Failed to analyze coin sentiment, using fallback analysis");
+    
+    // Fallback analysis without ML
+    const fallbackSentiment = priceChange > 0 ? 0.75 : 0.25;
+    const riskLevel = getRiskLevel(marketCap, volume, priceChange);
+    
     return {
-      sentiment: 0,
-      riskLevel: "Unknown",
-      recommendation: "Unable to analyze",
-      creationDate: "Unknown",
-      marketTrend: "Neutral"
+      sentiment: fallbackSentiment,
+      riskLevel,
+      recommendation: getRecommendation(fallbackSentiment, riskLevel),
+      creationDate: estimateCreationDate(marketCap, volume),
+      marketTrend: getMarketTrend(priceChange, volume)
     };
   }
 };
@@ -73,7 +83,6 @@ const getMarketTrend = (priceChange: number, volume: number): string => {
 };
 
 const estimateCreationDate = (marketCap: number, volume: number): string => {
-  // Simple heuristic based on market cap and volume
   if (marketCap < 1000000 && volume < 10000) {
     return "Last 7 days";
   } else if (marketCap < 5000000 && volume < 50000) {
