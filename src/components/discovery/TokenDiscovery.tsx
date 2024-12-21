@@ -216,4 +216,6 @@ export const TokenDiscovery = () => {
       </div>
     </section>
   );
-});
+};
+
+export default TokenDiscovery;
