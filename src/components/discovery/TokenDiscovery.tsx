@@ -13,7 +13,7 @@ import {
   extractSentiment, 
   TextClassificationOutput,
   TextClassificationSingle
-} from "@/components/predictor/types/prediction";
+} from "@/components/ai/analysis/types";
 
 interface AnalyzedToken {
   symbol: string;
@@ -36,13 +36,33 @@ export const TokenDiscovery = () => {
     queryKey: ["discoveryTokens"],
     queryFn: async () => {
       try {
-        console.log("Fetching token data...");
-        const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/SOL");
-        if (!response.ok) throw new Error("Failed to fetch tokens");
-        const data = await response.json();
+        console.log("Fetching token profiles...");
+        // First, get token profiles
+        const profileResponse = await fetch('https://api.dexscreener.com/token-profiles/latest/v1', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
         
-        if (!data?.pairs) {
-          console.log("No pairs data received:", data);
+        if (!profileResponse.ok) {
+          throw new Error("Failed to fetch token profiles");
+        }
+        
+        const profileData = await profileResponse.json();
+        console.log("Token profiles received:", profileData);
+
+        // Then get detailed token data
+        const tokenResponse = await fetch("https://api.dexscreener.com/latest/dex/tokens/SOL");
+        if (!tokenResponse.ok) {
+          throw new Error("Failed to fetch token data");
+        }
+        
+        const tokenData = await tokenResponse.json();
+        console.log("Token data received:", tokenData);
+        
+        if (!tokenData?.pairs) {
+          console.log("No pairs data received:", tokenData);
           throw new Error("No token data available");
         }
 
@@ -52,11 +72,16 @@ export const TokenDiscovery = () => {
           { device: "webgpu" }
         );
 
+        // Combine profile data with token data
         const analyzedTokens: AnalyzedToken[] = await Promise.all(
-          data.pairs
+          tokenData.pairs
             .filter((pair: any) => parseFloat(pair.volume24h) > 1000)
             .slice(0, 10)
             .map(async (pair: any) => {
+              const tokenProfile = profileData?.profiles?.find((profile: any) => 
+                profile.address.toLowerCase() === pair.baseToken.address.toLowerCase()
+              );
+
               const text = `${pair.baseToken.symbol} price ${pair.priceChange24h > 0 ? 'increased' : 'decreased'} 
                           by ${Math.abs(pair.priceChange24h)}% with volume ${pair.volume24h}`;
               
@@ -65,7 +90,7 @@ export const TokenDiscovery = () => {
               
               return {
                 symbol: pair.baseToken.symbol,
-                name: pair.baseToken.name || pair.baseToken.symbol,
+                name: tokenProfile?.name || pair.baseToken.name || pair.baseToken.symbol,
                 price: parseFloat(pair.priceUsd),
                 volume24h: parseFloat(pair.volume24h),
                 marketCap: pair.fdv || 0,
@@ -191,4 +216,4 @@ export const TokenDiscovery = () => {
       </div>
     </section>
   );
-};
+});
