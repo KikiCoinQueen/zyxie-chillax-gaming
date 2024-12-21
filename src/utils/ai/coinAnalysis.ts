@@ -1,5 +1,3 @@
-import { pipeline } from "@huggingface/transformers";
-import { TextClassificationOutput, extractSentiment } from "@/components/ai/analysis/types";
 import { toast } from "sonner";
 
 export interface CoinAnalysis {
@@ -17,36 +15,22 @@ export const analyzeCoin = async (
   volume: number
 ): Promise<CoinAnalysis> => {
   try {
-    const classifier = await pipeline(
-      "text-classification",
-      "Xenova/tiny-bert-sst2-distilled",
-      { 
-        quantized: true,
-        device: "cpu" // Fallback to CPU for better compatibility
-      }
-    );
-
-    const analysisText = `${name} has a price change of ${priceChange}% with market cap of ${marketCap} and volume of ${volume}`;
-    const result = await classifier(analysisText) as TextClassificationOutput;
-    const sentiment = extractSentiment(result).score;
-
-    // Simple rule-based analysis
+    // Simple rule-based sentiment analysis
+    const sentiment = calculateSentiment(priceChange, volume, marketCap);
     const riskLevel = getRiskLevel(marketCap, volume, priceChange);
-    const recommendation = getRecommendation(sentiment, riskLevel);
-    const marketTrend = getMarketTrend(priceChange, volume);
-
+    
     return {
       sentiment,
       riskLevel,
-      recommendation,
+      recommendation: getRecommendation(sentiment, riskLevel),
       creationDate: estimateCreationDate(marketCap, volume),
-      marketTrend
+      marketTrend: getMarketTrend(priceChange, volume)
     };
   } catch (error) {
     console.error("Error analyzing coin:", error);
-    toast.error("Failed to analyze coin sentiment, using fallback analysis");
+    toast.error("Failed to analyze coin, using fallback analysis");
     
-    // Fallback analysis without ML
+    // Fallback analysis
     const fallbackSentiment = priceChange > 0 ? 0.75 : 0.25;
     const riskLevel = getRiskLevel(marketCap, volume, priceChange);
     
@@ -58,6 +42,23 @@ export const analyzeCoin = async (
       marketTrend: getMarketTrend(priceChange, volume)
     };
   }
+};
+
+const calculateSentiment = (priceChange: number, volume: number, marketCap: number): number => {
+  // Normalize values
+  const priceImpact = Math.min(Math.abs(priceChange) / 100, 1) * (priceChange > 0 ? 1 : -1);
+  const volumeImpact = Math.min(volume / 1000000, 1);
+  const marketCapImpact = Math.min(marketCap / 1000000000, 1);
+
+  // Weighted average
+  const rawSentiment = (
+    (priceImpact * 0.5) + 
+    (volumeImpact * 0.3) + 
+    (marketCapImpact * 0.2)
+  );
+
+  // Convert to 0-1 range
+  return (rawSentiment + 1) / 2;
 };
 
 const getRiskLevel = (marketCap: number, volume: number, priceChange: number): string => {
