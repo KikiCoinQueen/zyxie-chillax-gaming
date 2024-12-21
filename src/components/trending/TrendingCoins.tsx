@@ -18,7 +18,7 @@ interface TrendingCoin {
     score: number;
     data: {
       price: string;
-      price_change_percentage_24h: number;
+      price_change_percentage_24h: number | null;
       market_cap: string;
       total_volume: string;
       sparkline: string;
@@ -72,9 +72,13 @@ export const TrendingCoins = () => {
   });
 
   const calculateSentiment = (coin: TrendingCoin) => {
-    const score = coin.item.score || 0;
-    const priceChange = coin.item.data?.price_change_percentage_24h || 0;
-    const marketCapRank = coin.item.market_cap_rank || 100;
+    const score = typeof coin.item.score === 'number' ? coin.item.score : 0;
+    const priceChange = typeof coin.item.data?.price_change_percentage_24h === 'number' 
+      ? coin.item.data.price_change_percentage_24h 
+      : 0;
+    const marketCapRank = typeof coin.item.market_cap_rank === 'number' 
+      ? coin.item.market_cap_rank 
+      : 100;
     
     // Weighted scoring system
     const scoreWeight = 0.4;
@@ -117,6 +121,13 @@ export const TrendingCoins = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {coins.slice(0, 6).map((coin: TrendingCoin) => {
                 const sentiment = calculateSentiment(coin);
+                const priceChange = typeof coin.item.data?.price_change_percentage_24h === 'number' 
+                  ? coin.item.data.price_change_percentage_24h 
+                  : 0;
+                const score = typeof coin.item.score === 'number' 
+                  ? coin.item.score 
+                  : 0;
+
                 return (
                   <Card key={coin.item.id} className="glass-card hover:scale-[1.02] transition-transform">
                     <CardHeader>
@@ -154,18 +165,14 @@ export const TrendingCoins = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="text-xs text-muted-foreground">24h Change</p>
-                            <p className={`text-sm ${
-                              (coin.item.data?.price_change_percentage_24h || 0) >= 0 
-                                ? 'text-green-500' 
-                                : 'text-red-500'
-                            }`}>
-                              {(coin.item.data?.price_change_percentage_24h || 0).toFixed(2)}%
+                            <p className={`text-sm ${priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {priceChange.toFixed(2)}%
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Trend Score</p>
                             <p className="text-sm font-mono">
-                              {(coin.item.score || 0).toFixed(2)}
+                              {score.toFixed(2)}
                             </p>
                           </div>
                         </div>
