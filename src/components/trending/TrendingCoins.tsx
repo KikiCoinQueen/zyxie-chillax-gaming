@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CoinAnalysisCard } from "./CoinAnalysisCard";
-import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -15,15 +14,8 @@ export const TrendingCoins = () => {
     queryKey: ["trendingCoins"],
     queryFn: async () => {
       try {
-        // Fetch trending coins
         const response = await fetch(
-          "https://api.coingecko.com/api/v3/search/trending",
-          {
-            headers: {
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache'
-            }
-          }
+          "https://api.coingecko.com/api/v3/search/trending"
         );
         
         if (!response.ok) {
@@ -36,9 +28,14 @@ export const TrendingCoins = () => {
           throw new Error("Invalid response structure");
         }
 
-        // Fetch detailed data for each coin
+        // Filter out well-known coins and get detailed data
+        const lesserKnownCoins = data.coins.filter((coin: any) => {
+          const marketCapRank = coin.item.market_cap_rank;
+          return marketCapRank > 100 || !marketCapRank; // Filter out top 100 coins
+        });
+
         const analyzedCoins = await Promise.all(
-          data.coins.map(async (coin: TrendingCoin) => {
+          lesserKnownCoins.map(async (coin: any) => {
             try {
               const detailResponse = await fetch(
                 `https://api.coingecko.com/api/v3/coins/${coin.item.id}?localization=false&tickers=false&community_data=false&developer_data=false`

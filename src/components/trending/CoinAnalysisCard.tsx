@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Twitter } from "lucide-react";
+import { Twitter, ExternalLink } from "lucide-react";
 import { CoinAnalysis } from "@/utils/ai/coinAnalysis";
 import { motion } from "framer-motion";
 import { formatPercentage, formatMarketCap } from "@/utils/formatters";
+import { Button } from "@/components/ui/button";
 
 interface CoinAnalysisCardProps {
   analysis: CoinAnalysis;
@@ -37,16 +38,28 @@ export const CoinAnalysisCard = ({
           <div className="flex items-center gap-2">
             <span>#{rank}</span>
             <span>{symbol}</span>
-            {analysis.twitterHandle && (
-              <a
-                href={`https://twitter.com/${analysis.twitterHandle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:text-primary/80"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-            )}
+            <div className="flex gap-2">
+              {analysis.twitterHandle && (
+                <a
+                  href={`https://twitter.com/${analysis.twitterHandle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:text-primary/80"
+                >
+                  <Twitter className="w-4 h-4" />
+                </a>
+              )}
+              {analysis.coingeckoUrl && (
+                <a
+                  href={analysis.coingeckoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:text-primary/80"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
           </div>
           <Badge variant="outline" className={getRiskColor(analysis.riskLevel)}>
             {analysis.riskLevel} Risk

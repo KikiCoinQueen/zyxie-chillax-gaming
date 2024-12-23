@@ -1,5 +1,3 @@
-import { toast } from "sonner";
-
 export interface CoinAnalysis {
   sentiment: number;
   riskLevel: string;
@@ -7,6 +5,7 @@ export interface CoinAnalysis {
   marketTrend: string;
   creationDate: string;
   twitterHandle?: string;
+  coingeckoUrl?: string;
   interestScore: number;
 }
 
@@ -25,10 +24,11 @@ export const analyzeCoin = async (
     return {
       sentiment,
       riskLevel,
-      recommendation: getRecommendation(name, sentiment, riskLevel, coinData),
+      recommendation: generateDetailedRecommendation(name, marketCap, priceChange, volume, coinData),
       marketTrend: getDetailedMarketTrend(priceChange, volume, marketCap),
       creationDate: getExactCreationDate(coinData?.genesis_date),
       twitterHandle: coinData?.links?.twitter_screen_name,
+      coingeckoUrl: `https://www.coingecko.com/en/coins/${coinData?.id}`,
       interestScore
     };
   } catch (error) {
@@ -85,6 +85,46 @@ const getDetailedMarketTrend = (priceChange: number, volume: number, marketCap: 
   return `Ranging market with ${volumeStrength} volatility`;
 };
 
+const generateDetailedRecommendation = (
+  name: string,
+  marketCap: number,
+  priceChange: number,
+  volume: number,
+  coinData?: any
+): string => {
+  const mcapInMillions = marketCap / 1000000;
+  const volumeInK = volume / 1000;
+  const potentialRetrace = mcapInMillions * 0.8; // 20% retrace target
+  
+  let analysis = `${name} is a ${coinData?.categories?.join(', ') || 'crypto'} project `;
+  
+  if (coinData?.description?.en) {
+    analysis += `focusing on ${coinData.description.en.split('.')[0]}. `;
+  }
+  
+  analysis += `With a $${mcapInMillions.toFixed(2)}M market cap and ${volumeInK.toFixed(2)}K daily volume, `;
+  
+  if (priceChange > 20) {
+    analysis += `it's showing strong momentum but might be overextended. Consider waiting for a retrace to $${potentialRetrace.toFixed(2)}M mcap. `;
+  } else if (priceChange > 0) {
+    analysis += `it's in a healthy uptrend. `;
+  } else {
+    analysis += `it's currently in a dip which might present a buying opportunity. `;
+  }
+  
+  if (marketCap < 5000000) {
+    analysis += "Very early stage with high risk/reward ratio. ";
+  } else if (marketCap < 20000000) {
+    analysis += "Still early but showing promising market adoption. ";
+  }
+  
+  if (volume > marketCap * 0.1) {
+    analysis += "High trading activity relative to market cap suggests strong interest. ";
+  }
+  
+  return analysis.trim();
+};
+
 const getExactCreationDate = (genesisDate?: string): string => {
   if (!genesisDate) return "Creation date unknown";
   
@@ -94,35 +134,6 @@ const getExactCreationDate = (genesisDate?: string): string => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   return `Created ${diffDays} days ago (${date.toLocaleDateString()})`;
-};
-
-const getRecommendation = (name: string, sentiment: number, risk: string, coinData?: any): string => {
-  const marketCap = coinData?.market_data?.market_cap?.usd;
-  const volume = coinData?.market_data?.total_volume?.usd;
-  
-  let analysis = `${name} shows `;
-  
-  if (sentiment > 0.8) {
-    analysis += "strong positive momentum with ";
-  } else if (sentiment > 0.6) {
-    analysis += "moderate potential but ";
-  } else {
-    analysis += "concerning signals with ";
-  }
-  
-  if (marketCap) {
-    analysis += `a market cap of $${(marketCap / 1000000).toFixed(2)}M and `;
-  }
-  
-  if (volume) {
-    analysis += `daily volume of $${(volume / 1000).toFixed(2)}K. `;
-  }
-  
-  analysis += risk === "High" 
-    ? "Exercise extreme caution due to high volatility."
-    : "Consider thorough research before investing.";
-    
-  return analysis;
 };
 
 const calculateInterestScore = (
