@@ -26,7 +26,7 @@ export const analyzeCoin = async (
     return {
       sentiment,
       riskLevel,
-      recommendation: generateDetailedRecommendation(name, marketCap, priceChange, volume, coinData),
+      recommendation: generateSmartRecommendation(name, marketCap, priceChange, volume, coinData),
       marketTrend: getDetailedMarketTrend(priceChange, volume, marketCap),
       creationDate: getExactCreationDate(coinData?.genesis_date),
       twitterHandle: coinData?.links?.twitter_screen_name,
@@ -84,7 +84,7 @@ const getDetailedMarketTrend = (priceChange: number, volume: number, marketCap: 
   return `Ranging market with ${volumeStrength} volatility`;
 };
 
-const generateDetailedRecommendation = (
+const generateSmartRecommendation = (
   name: string,
   marketCap: number,
   priceChange: number,
@@ -93,35 +93,63 @@ const generateDetailedRecommendation = (
 ): string => {
   const mcapInMillions = marketCap / 1000000;
   const volumeInK = volume / 1000;
+  const dailyVolRatio = volume / marketCap;
   const potentialRetrace = mcapInMillions * 0.8; // 20% retrace target
   
-  let analysis = `${name} is a ${coinData?.categories?.join(', ') || 'crypto'} project `;
+  let analysis = `${name} is ${coinData?.categories?.join(', ') || 'a crypto'} project `;
   
+  // Add project description if available
   if (coinData?.description?.en) {
-    analysis += `focusing on ${coinData.description.en.split('.')[0]}. `;
+    const description = coinData.description.en.split('.')[0];
+    analysis += `focusing on ${description}. `;
   }
   
-  analysis += `With a $${mcapInMillions.toFixed(2)}M market cap and ${volumeInK.toFixed(2)}K daily volume, `;
-  
-  if (priceChange > 20) {
-    analysis += `it's showing strong momentum but might be overextended. Consider waiting for a retrace to $${potentialRetrace.toFixed(2)}M mcap. `;
-  } else if (priceChange > 0) {
-    analysis += `it's in a healthy uptrend. `;
-  } else {
-    analysis += `it's currently in a dip which might present a buying opportunity. `;
-  }
-  
+  // Market cap analysis
   if (marketCap < 5000000) {
-    analysis += "Very early stage with high risk/reward ratio. ";
+    analysis += `At just $${mcapInMillions.toFixed(2)}M market cap, this is a very early-stage project. `;
   } else if (marketCap < 20000000) {
-    analysis += "Still early but showing promising market adoption. ";
+    analysis += `With a $${mcapInMillions.toFixed(2)}M market cap, there's still room for growth. `;
   }
   
-  if (volume > marketCap * 0.1) {
-    analysis += "High trading activity relative to market cap suggests strong interest. ";
+  // Volume analysis
+  if (dailyVolRatio > 0.3) {
+    analysis += `High trading activity (${(dailyVolRatio * 100).toFixed(1)}% of mcap) indicates strong interest. `;
   }
   
-  return analysis.trim();
+  // Price action analysis
+  if (priceChange > 20) {
+    analysis += `After a ${priceChange.toFixed(1)}% surge, consider waiting for a retrace to $${potentialRetrace.toFixed(2)}M mcap. `;
+  } else if (priceChange < -20) {
+    analysis += `Currently down ${Math.abs(priceChange).toFixed(1)}%, could be a good entry if fundamentals check out. `;
+  }
+  
+  // Social metrics if available
+  if (coinData?.community_data) {
+    const { twitter_followers, telegram_channel_user_count } = coinData.community_data;
+    if (twitter_followers > 10000 || telegram_channel_user_count > 5000) {
+      analysis += `Strong social presence with ${twitter_followers?.toLocaleString() || 0} Twitter followers. `;
+    }
+  }
+  
+  // Development activity if available
+  if (coinData?.developer_data?.stars > 100) {
+    analysis += `Active development with ${coinData.developer_data.stars} GitHub stars. `;
+  }
+  
+  // Risk assessment
+  const riskLevel = getRiskLevel(marketCap, volume, priceChange);
+  analysis += `Risk level: ${riskLevel}. `;
+  
+  // Trading suggestion
+  if (riskLevel === "Very High") {
+    analysis += "Only trade with funds you can afford to lose completely.";
+  } else if (riskLevel === "High") {
+    analysis += "Consider small position sizes and strict stop losses.";
+  } else {
+    analysis += "Standard risk management rules apply.";
+  }
+  
+  return analysis;
 };
 
 const getExactCreationDate = (genesisDate?: string): string => {
