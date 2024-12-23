@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Star } from "lucide-react";
+import { TrendingUp, Star, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
 
-  const { data: coins, isLoading } = useQuery({
+  const { data: coins, isLoading, error } = useQuery({
     queryKey: ["trendingCoins"],
     queryFn: async () => {
       try {
@@ -29,6 +29,7 @@ export const TrendingCoins = () => {
         
         if (!data?.coins || !Array.isArray(data.coins)) {
           console.log("Invalid response structure:", data);
+          toast.error("Invalid data received from CoinGecko");
           return [];
         }
 
@@ -44,6 +45,10 @@ export const TrendingCoins = () => {
               const detailResponse = await fetch(
                 `https://api.coingecko.com/api/v3/coins/${coin.item.id}?localization=false&tickers=false&community_data=false&developer_data=false`
               );
+              
+              if (!detailResponse.ok) {
+                throw new Error(`Failed to fetch details for ${coin.item.id}`);
+              }
               
               const coinData = await detailResponse.json();
               
@@ -66,6 +71,8 @@ export const TrendingCoins = () => {
               };
             } catch (error) {
               console.error(`Error fetching details for ${coin.item.id}:`, error);
+              toast.error(`Failed to fetch details for ${coin.item.symbol}`);
+              
               const analysis = await analyzeCoin(
                 coin.item.name,
                 coin.item.data?.price_change_percentage_24h || 0,
@@ -82,17 +89,40 @@ export const TrendingCoins = () => {
         );
         
         // Sort by interest score
-        return analyzedCoins.sort((a, b) => 
-          (b.analysis?.interestScore || 0) - (a.analysis?.interestScore || 0)
-        );
+        return analyzedCoins
+          .sort((a, b) => (b.analysis?.interestScore || 0) - (a.analysis?.interestScore || 0))
+          .slice(0, 6); // Only show top 6 most interesting coins
       } catch (error) {
         console.error("Error fetching trending coins:", error);
-        toast.error("Failed to fetch trending coins");
+        toast.error("Failed to fetch trending coins", {
+          description: "Please try again later",
+          action: {
+            label: "Retry",
+            onClick: () => window.location.reload()
+          }
+        });
         return [];
       }
     },
-    refetchInterval: 60000
+    refetchInterval: 60000,
+    meta: {
+      onError: () => {
+        toast.error("Failed to fetch trending coins", {
+          description: "We'll try again shortly"
+        });
+      }
+    }
   });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <AlertTriangle className="w-12 h-12 text-red-500 animate-pulse" />
+        <h3 className="text-xl font-semibold">Failed to Load Trending Coins</h3>
+        <p className="text-muted-foreground">Please try again later</p>
+      </div>
+    );
+  }
 
   return (
     <section className="py-20 px-4" id="trending-coins">
@@ -122,7 +152,13 @@ export const TrendingCoins = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {coins.map((coin: any, index: number) => (
-                <div key={coin.item.id} className="space-y-4">
+                <motion.div 
+                  key={coin.item.id} 
+                  className="space-y-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
                   <Card 
                     className="glass-card hover:scale-[1.02] transition-transform cursor-pointer"
                     onClick={() => setSelectedCoin(coin.item.id)}
@@ -147,15 +183,22 @@ export const TrendingCoins = () => {
                   </Card>
 
                   {selectedCoin === coin.item.id && (
-                    <CoinAnalysisCard
-                      analysis={coin.analysis}
-                      symbol={coin.item.symbol}
-                      marketCap={coin.detailedData?.market_data?.market_cap?.usd}
-                      priceChange={coin.detailedData?.market_data?.price_change_percentage_24h}
-                      rank={index + 1}
-                    />
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CoinAnalysisCard
+                        analysis={coin.analysis}
+                        symbol={coin.item.symbol}
+                        marketCap={coin.detailedData?.market_data?.market_cap?.usd}
+                        priceChange={coin.detailedData?.market_data?.price_change_percentage_24h}
+                        rank={index + 1}
+                      />
+                    </motion.div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
