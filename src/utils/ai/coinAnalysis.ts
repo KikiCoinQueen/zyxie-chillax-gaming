@@ -94,59 +94,61 @@ const generateSmartRecommendation = (
   const mcapInMillions = marketCap / 1000000;
   const volumeInK = volume / 1000;
   const dailyVolRatio = volume / marketCap;
-  const potentialRetrace = mcapInMillions * 0.8; // 20% retrace target
+  const potentialRetrace = mcapInMillions * 0.8;
   
-  let analysis = `${name} is ${coinData?.categories?.join(', ') || 'a crypto'} project `;
+  let analysis = `${name} presents as ${coinData?.categories?.join(', ') || 'an emerging crypto asset'} `;
   
-  // Add project description if available
+  // Project fundamentals
   if (coinData?.description?.en) {
     const description = coinData.description.en.split('.')[0];
-    analysis += `focusing on ${description}. `;
+    analysis += `with a core focus on ${description}. `;
   }
   
-  // Market cap analysis
+  // Market positioning
   if (marketCap < 5000000) {
-    analysis += `At just $${mcapInMillions.toFixed(2)}M market cap, this is a very early-stage project. `;
+    analysis += `With a nascent market cap of $${mcapInMillions.toFixed(2)}M, this project sits in the micro-cap territory, suggesting significant growth potential coupled with elevated risk. `;
   } else if (marketCap < 20000000) {
-    analysis += `With a $${mcapInMillions.toFixed(2)}M market cap, there's still room for growth. `;
+    analysis += `Positioned at $${mcapInMillions.toFixed(2)}M market cap, the project demonstrates established market presence while retaining substantial growth runway. `;
   }
   
-  // Volume analysis
+  // Volume analysis with sophisticated metrics
   if (dailyVolRatio > 0.3) {
-    analysis += `High trading activity (${(dailyVolRatio * 100).toFixed(1)}% of mcap) indicates strong interest. `;
+    analysis += `Notably, the volume/mcap ratio of ${(dailyVolRatio * 100).toFixed(1)}% indicates robust market participation and liquidity depth. `;
+  } else if (dailyVolRatio > 0.1) {
+    analysis += `The volume/mcap ratio of ${(dailyVolRatio * 100).toFixed(1)}% suggests healthy market activity without overextension. `;
   }
   
-  // Price action analysis
+  // Technical analysis and entry points
   if (priceChange > 20) {
-    analysis += `After a ${priceChange.toFixed(1)}% surge, consider waiting for a retrace to $${potentialRetrace.toFixed(2)}M mcap. `;
+    analysis += `Following a significant ${priceChange.toFixed(1)}% appreciation, prudent investors might consider strategic entry points near the $${potentialRetrace.toFixed(2)}M market cap level, aligning with key technical retracement zones. `;
   } else if (priceChange < -20) {
-    analysis += `Currently down ${Math.abs(priceChange).toFixed(1)}%, could be a good entry if fundamentals check out. `;
+    analysis += `The recent ${Math.abs(priceChange).toFixed(1)}% correction may present an attractive entry point, contingent upon fundamental strength and market structure validation. `;
   }
   
-  // Social metrics if available
+  // Social metrics and community analysis
   if (coinData?.community_data) {
     const { twitter_followers, telegram_channel_user_count } = coinData.community_data;
     if (twitter_followers > 10000 || telegram_channel_user_count > 5000) {
-      analysis += `Strong social presence with ${twitter_followers?.toLocaleString() || 0} Twitter followers. `;
+      analysis += `The project maintains robust social engagement metrics with ${twitter_followers?.toLocaleString() || 0} Twitter followers, indicating strong community backing. `;
     }
   }
   
-  // Development activity if available
+  // Development activity assessment
   if (coinData?.developer_data?.stars > 100) {
-    analysis += `Active development with ${coinData.developer_data.stars} GitHub stars. `;
+    analysis += `Technical fundamentals appear solid with ${coinData.developer_data.stars} GitHub stars, suggesting active development and community contribution. `;
   }
   
-  // Risk assessment
+  // Risk assessment and position sizing
   const riskLevel = getRiskLevel(marketCap, volume, priceChange);
-  analysis += `Risk level: ${riskLevel}. `;
+  analysis += `Risk Assessment: ${riskLevel}. `;
   
-  // Trading suggestion
+  // Sophisticated trading strategy recommendations
   if (riskLevel === "Very High") {
-    analysis += "Only trade with funds you can afford to lose completely.";
+    analysis += "Position sizing should be extremely conservative, with capital allocation not exceeding 0.5-1% of portfolio value. Implement strict stop-loss protocols and consider scaling in gradually.";
   } else if (riskLevel === "High") {
-    analysis += "Consider small position sizes and strict stop losses.";
+    analysis += "Consider implementing a scaled entry strategy with defined risk parameters. Suggested position sizing: 1-2% of portfolio with tight stop-loss orders.";
   } else {
-    analysis += "Standard risk management rules apply.";
+    analysis += "Standard position sizing protocols apply. Consider implementing a core-satellite approach with this asset, maintaining flexibility for tactical adjustments based on market conditions.";
   }
   
   return analysis;
