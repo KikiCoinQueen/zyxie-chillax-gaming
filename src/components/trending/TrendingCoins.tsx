@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CoinAnalysisCard } from "./CoinAnalysisCard";
+import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -14,6 +15,7 @@ export const TrendingCoins = () => {
     queryKey: ["trendingCoins"],
     queryFn: async () => {
       try {
+        console.log("Fetching trending coins...");
         const response = await fetch(
           "https://api.coingecko.com/api/v3/search/trending"
         );
@@ -23,12 +25,14 @@ export const TrendingCoins = () => {
         }
         
         const data = await response.json();
+        console.log("API Response:", data);
         
         if (!data?.coins || !Array.isArray(data.coins)) {
-          throw new Error("Invalid response structure");
+          console.log("Invalid response structure:", data);
+          return [];
         }
 
-        // Filter out well-known coins and get detailed data
+        // Filter out well-known coins
         const lesserKnownCoins = data.coins.filter((coin: any) => {
           const marketCapRank = coin.item.market_cap_rank;
           return marketCapRank > 100 || !marketCapRank; // Filter out top 100 coins
@@ -90,8 +94,6 @@ export const TrendingCoins = () => {
     refetchInterval: 60000
   });
 
-  // ... keep existing code (loading and error states)
-
   return (
     <section className="py-20 px-4" id="trending-coins">
       <div className="container max-w-6xl mx-auto">
@@ -119,7 +121,7 @@ export const TrendingCoins = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {coins.slice(0, 6).map((coin: any, index: number) => (
+              {coins.map((coin: any, index: number) => (
                 <div key={coin.item.id} className="space-y-4">
                   <Card 
                     className="glass-card hover:scale-[1.02] transition-transform cursor-pointer"
@@ -136,7 +138,7 @@ export const TrendingCoins = () => {
                           <div>
                             <span className="text-lg">{coin.item.symbol.toUpperCase()}</span>
                             <Badge variant="secondary" className="ml-2">
-                              #{coin.item.market_cap_rank || 'N/A'}
+                              #{index + 1}
                             </Badge>
                           </div>
                         </div>

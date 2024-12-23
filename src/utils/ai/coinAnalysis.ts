@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 export interface CoinAnalysis {
   sentiment: number;
   riskLevel: string;
@@ -47,19 +49,16 @@ export const analyzeCoin = async (
 };
 
 const calculateSentiment = (priceChange: number, volume: number, marketCap: number): number => {
-  // Normalize values
   const priceImpact = Math.min(Math.abs(priceChange) / 100, 1) * (priceChange > 0 ? 1 : -1);
   const volumeImpact = Math.min(volume / 1000000, 1);
   const marketCapImpact = Math.min(marketCap / 1000000000, 1);
 
-  // Weighted average
   const rawSentiment = (
     (priceImpact * 0.5) + 
     (volumeImpact * 0.3) + 
     (marketCapImpact * 0.2)
   );
 
-  // Convert to 0-1 range
   return (rawSentiment + 1) / 2;
 };
 
