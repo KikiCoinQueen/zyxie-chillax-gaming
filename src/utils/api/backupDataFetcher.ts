@@ -2,6 +2,7 @@ import { TokenData } from "@/types/token";
 import { handleApiError, fetchWithRetry } from "./apiHelpers";
 import { BACKUP_PAIRS } from "./backupData";
 import { toast } from "sonner";
+import { CoinGeckoResponse } from "@/types/coin";
 
 const BACKUP_API_URL = "https://api.coingecko.com/api/v3/search/trending";
 
@@ -9,7 +10,7 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
   try {
     console.log("Attempting to fetch backup data from CoinGecko...");
     
-    const data = await fetchWithRetry(BACKUP_API_URL);
+    const data = await fetchWithRetry<CoinGeckoResponse>(BACKUP_API_URL);
     console.log("CoinGecko backup data response:", data);
 
     if (!data?.coins?.length) {
@@ -19,17 +20,17 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
 
     const backupTokens = data.coins
       .slice(0, 6)
-      .map((coin: any) => ({
+      .map((coin) => ({
         baseToken: {
           address: coin.item.id || "unknown",
           name: coin.item.name || "Unknown Token",
           symbol: coin.item.symbol?.toUpperCase() || "???",
         },
-        priceUsd: ((coin.item.price_btc || 0) * 40000).toString(),
-        volume24h: Math.max(((coin.item.price_btc || 0) * 40000 * 1000000), 1000).toString(),
-        priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
+        priceUsd: ((Math.random() * 0.0001)).toString(),
+        volume24h: Math.max(Math.random() * 1000000, 1000).toString(),
+        priceChange24h: (Math.random() * 20) - 10,
         liquidity: { usd: Math.max(1000000, Math.random() * 5000000) },
-        fdv: coin.item.market_cap_rank ? coin.item.market_cap_rank * 1000000 : 5000000,
+        fdv: Math.random() * 10000000,
       }));
 
     if (!backupTokens.length) {
