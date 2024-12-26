@@ -1,5 +1,5 @@
 import { TokenData } from "@/types/token";
-import { handleApiError, retryWithBackoff, fetchWithTimeout } from "./apiHelpers";
+import { handleApiError, fetchWithRetry } from "./apiHelpers";
 import { BACKUP_PAIRS } from "./backupData";
 import { toast } from "sonner";
 
@@ -9,11 +9,7 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
   try {
     console.log("Attempting to fetch backup data from CoinGecko...");
     
-    const response = await retryWithBackoff(async () => {
-      return await fetchWithTimeout(BACKUP_API_URL, {}, 10000);
-    });
-    
-    const data = await response.json();
+    const data = await fetchWithRetry(BACKUP_API_URL);
     console.log("CoinGecko backup data response:", data);
 
     if (!data?.coins?.length) {

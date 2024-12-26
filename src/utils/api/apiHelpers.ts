@@ -60,9 +60,14 @@ export const fetchWithRetry = async <T>(
     return cachedData;
   }
 
+  // Add CORS proxy for CoinGecko requests
+  const finalUrl = url.includes('coingecko') 
+    ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    : url;
+
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const response = await fetch(url, {
+      const response = await fetch(finalUrl, {
         ...options,
         headers: {
           'Accept': 'application/json',

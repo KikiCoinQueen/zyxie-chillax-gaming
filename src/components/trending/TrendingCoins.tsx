@@ -9,6 +9,34 @@ import { CoinAnalysisCard } from "./CoinAnalysisCard";
 import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 import { fetchCoinGeckoData, fetchCoinDetails } from "@/utils/api/coinGeckoClient";
 
+interface CoinDetails {
+  market_data?: {
+    market_cap?: {
+      usd?: number;
+    };
+    price_change_percentage_24h?: number;
+    total_volume?: {
+      usd?: number;
+    };
+  };
+  community_data?: {
+    twitter_followers?: number;
+    telegram_channel_user_count?: number;
+  };
+  developer_data?: {
+    stars?: number;
+  };
+  links?: {
+    twitter_screen_name?: string;
+  };
+  genesis_date?: string;
+  id?: string;
+  description?: {
+    en?: string;
+  };
+  categories?: string[];
+}
+
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
 
@@ -27,7 +55,7 @@ export const TrendingCoins = () => {
         const analyzedCoins = await Promise.all(
           response.map(async (coin: any) => {
             try {
-              const coinData = await fetchCoinDetails(coin.baseToken.address);
+              const coinData = await fetchCoinDetails(coin.baseToken.address) as CoinDetails;
               
               const marketCap = coinData?.market_data?.market_cap?.usd;
               const priceChange = coinData?.market_data?.price_change_percentage_24h;
