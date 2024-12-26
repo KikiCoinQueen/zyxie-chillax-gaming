@@ -36,8 +36,7 @@ export const setCachedData = <T>(key: string, data: T) => {
 export const handleApiError = (error: any, source: string) => {
   console.error(`Error in ${source}:`, error);
   
-  const message = error?.message || 'Unknown error occurred';
-  if (message.includes('rate limit')) {
+  if (error?.status === 429) {
     toast.error(`Rate limit exceeded for ${source}`, {
       description: "Using cached data while waiting for API cooldown"
     });
@@ -48,60 +47,50 @@ export const handleApiError = (error: any, source: string) => {
   }
 };
 
-export const fetchWithTimeout = async (
-  url: string, 
-  options: RequestInit = {}, 
-  timeout = 5000
-): Promise<Response> => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        ...options.headers,
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache'
-      }
-    });
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-};
-
-export const retryWithBackoff = async <T>(
-  fn: () => Promise<T>,
-  retries = MAX_RETRIES,
-  baseDelay = BASE_DELAY,
-  maxDelay = MAX_DELAY
+export const fetchWithRetry = async <T>(
+  url: string,
+  options: RequestInit = {},
+  retries = MAX_RETRIES
 ): Promise<T> => {
-  let lastError: Error;
+  const cacheKey = `${url}${JSON.stringify(options)}`;
+  const cachedData = getCachedData<T>(cacheKey);
   
+  if (cachedData) {
+    console.log("Using cached data for:", url);
+    return cachedData;
+  }
+
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      return await fn();
-    } catch (error) {
-      lastError = error as Error;
-      console.warn(`Attempt ${attempt + 1} failed:`, error);
-      
-      if (attempt === retries - 1) {
-        throw lastError;
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          ...options.headers
+        }
+      });
+
+      if (response.status === 429) {
+        const delay = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
+        console.log(`Rate limited, waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
       }
-      
-      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCachedData(cacheKey, data);
+      return data;
+    } catch (error) {
+      if (attempt === retries - 1) throw error;
+      const delay = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
-  throw lastError!;
+
+  throw new Error(`Failed after ${retries} retries`);
 };

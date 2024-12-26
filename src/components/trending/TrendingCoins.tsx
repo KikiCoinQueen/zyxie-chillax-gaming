@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CoinAnalysisCard } from "./CoinAnalysisCard";
 import { analyzeCoin } from "@/utils/ai/coinAnalysis";
+import { fetchCoinGeckoData, fetchCoinDetails } from "@/utils/api/coinGeckoClient";
 
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -16,48 +17,24 @@ export const TrendingCoins = () => {
     queryFn: async () => {
       try {
         console.log("Fetching trending coins...");
-        const response = await fetch(
-          "https://api.coingecko.com/api/v3/search/trending"
-        );
+        const response = await fetchCoinGeckoData();
         
-        if (!response.ok) {
-          throw new Error("Failed to fetch trending coins");
-        }
-        
-        const data = await response.json();
-        console.log("API Response:", data);
-        
-        if (!data?.coins || !Array.isArray(data.coins)) {
-          console.log("Invalid response structure:", data);
-          toast.error("Invalid data received from CoinGecko");
+        if (!response?.length) {
+          console.log("No trending coins found");
           return [];
         }
 
-        // Filter out well-known coins
-        const lesserKnownCoins = data.coins.filter((coin: any) => {
-          const marketCapRank = coin.item.market_cap_rank;
-          return marketCapRank > 100 || !marketCapRank; // Filter out top 100 coins
-        });
-
         const analyzedCoins = await Promise.all(
-          lesserKnownCoins.map(async (coin: any) => {
+          response.map(async (coin: any) => {
             try {
-              const detailResponse = await fetch(
-                `https://api.coingecko.com/api/v3/coins/${coin.item.id}?localization=false&tickers=false&community_data=false&developer_data=false`
-              );
+              const coinData = await fetchCoinDetails(coin.baseToken.address);
               
-              if (!detailResponse.ok) {
-                throw new Error(`Failed to fetch details for ${coin.item.id}`);
-              }
-              
-              const coinData = await detailResponse.json();
-              
-              const marketCap = coinData.market_data?.market_cap?.usd;
-              const priceChange = coinData.market_data?.price_change_percentage_24h;
-              const volume = coinData.market_data?.total_volume?.usd;
+              const marketCap = coinData?.market_data?.market_cap?.usd;
+              const priceChange = coinData?.market_data?.price_change_percentage_24h;
+              const volume = coinData?.market_data?.total_volume?.usd;
 
               const analysis = await analyzeCoin(
-                coin.item.name,
+                coin.baseToken.name,
                 priceChange,
                 marketCap,
                 volume,
@@ -70,14 +47,13 @@ export const TrendingCoins = () => {
                 detailedData: coinData
               };
             } catch (error) {
-              console.error(`Error fetching details for ${coin.item.id}:`, error);
-              toast.error(`Failed to fetch details for ${coin.item.symbol}`);
+              console.error(`Error fetching details for ${coin.baseToken.id}:`, error);
               
               const analysis = await analyzeCoin(
-                coin.item.name,
-                coin.item.data?.price_change_percentage_24h || 0,
-                parseFloat(coin.item.data?.market_cap || '0'),
-                parseFloat(coin.item.data?.total_volume || '0')
+                coin.baseToken.name,
+                coin.priceChange24h,
+                parseFloat(coin.fdv),
+                parseFloat(coin.volume24h)
               );
               
               return {
@@ -88,23 +64,17 @@ export const TrendingCoins = () => {
           })
         );
         
-        // Sort by interest score
         return analyzedCoins
           .sort((a, b) => (b.analysis?.interestScore || 0) - (a.analysis?.interestScore || 0))
-          .slice(0, 6); // Only show top 6 most interesting coins
+          .slice(0, 6);
       } catch (error) {
         console.error("Error fetching trending coins:", error);
-        toast.error("Failed to fetch trending coins", {
-          description: "Please try again later",
-          action: {
-            label: "Retry",
-            onClick: () => window.location.reload()
-          }
-        });
-        return [];
+        throw error;
       }
     },
     refetchInterval: 60000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     meta: {
       onError: () => {
         toast.error("Failed to fetch trending coins", {
