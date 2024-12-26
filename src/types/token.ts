@@ -1,8 +1,10 @@
 export interface TokenData {
   baseToken: {
+    id: string;
     address: string;
     name: string;
     symbol: string;
+    thumb?: string;
   };
   priceUsd: string;
   volume24h: string;
@@ -14,18 +16,15 @@ export interface TokenData {
 }
 
 export interface TrendingCoin {
-  item: {
+  baseToken: {
     id: string;
-    coin_id: number;
     name: string;
     symbol: string;
-    market_cap_rank: number;
-    thumb: string;
-    price_btc: number;
-    data: {
-      price_change_percentage_24h?: number;
-      market_cap?: number;
-      total_volume?: number;
-    };
+    thumb?: string;
   };
+  priceUsd: string;
+  volume24h: string;
+  priceChange24h: number;
+  marketCap?: number;
+  rank?: number;
 }

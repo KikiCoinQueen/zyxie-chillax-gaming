@@ -2,7 +2,7 @@ import { TokenData } from "@/types/token";
 import { createFallbackChain } from "./apiRetry";
 import { toast } from "sonner";
 import { fetchDexScreenerData } from "./api/dexScreenerClient";
-import { fetchCoinGeckoData, fetchMarketChart } from "./api/coinGeckoClient";
+import { fetchCoinGeckoData, fetchCoinDetails, fetchMarketChart } from "./api/coinGeckoClient";
 
 const API_CACHE = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 30000; // 30 seconds
@@ -29,7 +29,7 @@ export const fetchSolanaTokens = async (useFallback: boolean): Promise<TokenData
   }
 
   try {
-    const data = await createFallbackChain(
+    const data = await createFallbackChain<TokenData[]>(
       fetchDexScreenerData,
       fetchCoinGeckoData,
       {
