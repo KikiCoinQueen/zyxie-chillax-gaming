@@ -4,11 +4,63 @@ import { TrendingUp, Star, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CoinAnalysisCard } from "./CoinAnalysisCard";
-import { useTrendingCoins } from "@/hooks/useTrendingCoins";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCoinGeckoData, fetchCoinDetails } from "@/utils/api/coinGeckoClient";
+import { analyzeCoin } from "@/utils/ai/coinAnalysis";
+import { TrendingCoin } from "@/types/coin";
 
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
-  const { data: coins, isLoading, error } = useTrendingCoins();
+
+  const { data: coins, isLoading, error } = useQuery({
+    queryKey: ["trendingCoins"],
+    queryFn: async () => {
+      const trendingCoins = await fetchCoinGeckoData();
+      
+      const coinsWithDetails = await Promise.all(
+        trendingCoins.map(async (coin) => {
+          try {
+            const coinData = await fetchCoinDetails(coin.baseToken.id);
+            
+            const analysis = await analyzeCoin(
+              coin.baseToken.name,
+              coin.priceChange24h,
+              coin.marketCap || 0,
+              parseFloat(coin.volume24h),
+              coinData
+            );
+
+            return {
+              ...coin,
+              analysis,
+              detailedData: coinData
+            };
+          } catch (error) {
+            console.error(`Error fetching details for ${coin.baseToken.id}:`, error);
+            
+            const analysis = await analyzeCoin(
+              coin.baseToken.name,
+              coin.priceChange24h,
+              coin.marketCap || 0,
+              parseFloat(coin.volume24h)
+            );
+            
+            return {
+              ...coin,
+              analysis
+            };
+          }
+        })
+      );
+      
+      return coinsWithDetails
+        .sort((a, b) => (b.analysis?.interestScore || 0) - (a.analysis?.interestScore || 0))
+        .slice(0, 6);
+    },
+    refetchInterval: 60000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 
   if (error) {
     return (
@@ -47,9 +99,9 @@ export const TrendingCoins = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {coins.map((coin: any, index: number) => (
+              {coins.map((coin, index) => (
                 <motion.div 
-                  key={coin.baseToken?.id || index} 
+                  key={coin.baseToken.id} 
                   className="space-y-4"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -57,20 +109,20 @@ export const TrendingCoins = () => {
                 >
                   <Card 
                     className="glass-card hover:scale-[1.02] transition-transform cursor-pointer"
-                    onClick={() => setSelectedCoin(coin.baseToken?.id)}
+                    onClick={() => setSelectedCoin(coin.baseToken.id)}
                   >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          {coin.baseToken?.thumb && (
+                          {coin.baseToken.thumb && (
                             <img 
                               src={coin.baseToken.thumb} 
-                              alt={coin.baseToken?.name || 'Token'}
+                              alt={coin.baseToken.name}
                               className="w-8 h-8 rounded-full"
                             />
                           )}
                           <div>
-                            <span className="text-lg">{coin.baseToken?.symbol?.toUpperCase() || 'Unknown'}</span>
+                            <span className="text-lg">{coin.baseToken.symbol.toUpperCase()}</span>
                             <Badge variant="secondary" className="ml-2">
                               #{index + 1}
                             </Badge>
@@ -80,7 +132,7 @@ export const TrendingCoins = () => {
                     </CardHeader>
                   </Card>
 
-                  {selectedCoin === coin.baseToken?.id && (
+                  {selectedCoin === coin.baseToken.id && coin.analysis && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
@@ -89,9 +141,9 @@ export const TrendingCoins = () => {
                     >
                       <CoinAnalysisCard
                         analysis={coin.analysis}
-                        symbol={coin.baseToken?.symbol}
-                        marketCap={coin.detailedData?.market_data?.market_cap?.usd}
-                        priceChange={coin.detailedData?.market_data?.price_change_percentage_24h}
+                        symbol={coin.baseToken.symbol}
+                        marketCap={coin.marketCap}
+                        priceChange={coin.priceChange24h}
                         rank={index + 1}
                       />
                     </motion.div>

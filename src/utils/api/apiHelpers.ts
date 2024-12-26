@@ -49,8 +49,7 @@ export const handleApiError = (error: any, source: string) => {
 
 export const fetchWithRetry = async <T>(
   url: string,
-  options: RequestInit = {},
-  retries = MAX_RETRIES
+  options: RequestInit = {}
 ): Promise<T> => {
   const cacheKey = `${url}${JSON.stringify(options)}`;
   const cachedData = getCachedData<T>(cacheKey);
@@ -60,12 +59,10 @@ export const fetchWithRetry = async <T>(
     return cachedData;
   }
 
-  // Add CORS proxy for CoinGecko requests
-  const finalUrl = url.includes('coingecko') 
-    ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-    : url;
+  // Add CORS proxy for all requests
+  const finalUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
-  for (let attempt = 0; attempt < retries; attempt++) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const response = await fetch(finalUrl, {
         ...options,
@@ -76,13 +73,6 @@ export const fetchWithRetry = async <T>(
         }
       });
 
-      if (response.status === 429) {
-        const delay = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
-        console.log(`Rate limited, waiting ${delay}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -91,11 +81,11 @@ export const fetchWithRetry = async <T>(
       setCachedData(cacheKey, data);
       return data;
     } catch (error) {
-      if (attempt === retries - 1) throw error;
+      if (attempt === MAX_RETRIES - 1) throw error;
       const delay = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
-  throw new Error(`Failed after ${retries} retries`);
+  throw new Error(`Failed after ${MAX_RETRIES} retries`);
 };
