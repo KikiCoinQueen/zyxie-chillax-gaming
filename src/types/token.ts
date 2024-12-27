@@ -1,3 +1,6 @@
+/**
+ * Represents token data with price, volume, and market information
+ */
 export interface TokenData {
   baseToken: {
     id: string;
@@ -15,8 +18,13 @@ export interface TokenData {
   fdv: number;
   marketCap?: number;
   rank?: number;
+  lastUpdated?: string;
+  confidence?: number;
 }
 
+/**
+ * Represents a trending cryptocurrency token
+ */
 export interface TrendingCoin {
   baseToken: {
     id: string;

@@ -15,7 +15,9 @@ export const BACKUP_PAIRS: TokenData[] = [
     liquidity: { usd: 10000000 },
     fdv: 1000000,
     marketCap: 10000000,
-    rank: 1
+    rank: 1,
+    lastUpdated: new Date().toISOString(),
+    confidence: 0.95
   },
   {
     baseToken: {
@@ -31,7 +33,9 @@ export const BACKUP_PAIRS: TokenData[] = [
     liquidity: { usd: 5000000 },
     fdv: 500000,
     marketCap: 5000000,
-    rank: 2
+    rank: 2,
+    lastUpdated: new Date().toISOString(),
+    confidence: 0.98
   },
   {
     baseToken: {
@@ -47,7 +51,9 @@ export const BACKUP_PAIRS: TokenData[] = [
     liquidity: { usd: 3000000 },
     fdv: 750000,
     marketCap: 3000000,
-    rank: 3
+    rank: 3,
+    lastUpdated: new Date().toISOString(),
+    confidence: 0.85
   },
   {
     baseToken: {
@@ -63,6 +69,8 @@ export const BACKUP_PAIRS: TokenData[] = [
     liquidity: { usd: 2000000 },
     fdv: 400000,
     marketCap: 2000000,
-    rank: 4
+    rank: 4,
+    lastUpdated: new Date().toISOString(),
+    confidence: 0.92
   }
 ];
