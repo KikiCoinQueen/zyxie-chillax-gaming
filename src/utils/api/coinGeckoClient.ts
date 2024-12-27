@@ -1,4 +1,4 @@
-import { CoinDetails, CoinGeckoResponse, TrendingCoin } from "@/types/coin";
+import { CoinDetails, CoinGeckoResponse } from "@/types/coin";
 import { TokenData } from "@/types/token";
 import { fetchWithRetry, handleApiError } from "./apiHelpers";
 import { BACKUP_PAIRS } from "./backupData";
@@ -30,7 +30,9 @@ export const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
       volume24h: (coin.item.price_btc ? (coin.item.price_btc * 40000 * 1000000).toString() : "0"),
       priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
       liquidity: { usd: coin.item.data?.market_cap || 0 },
-      fdv: coin.item.data?.market_cap || 0
+      fdv: coin.item.data?.market_cap || 0,
+      marketCap: coin.item.data?.market_cap || 0,
+      rank: coin.item.market_cap_rank || 999
     }));
   } catch (error) {
     handleApiError(error, "CoinGecko");

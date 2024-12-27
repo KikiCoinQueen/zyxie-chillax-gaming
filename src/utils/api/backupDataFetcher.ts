@@ -18,19 +18,23 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
       return BACKUP_PAIRS;
     }
 
-    const backupTokens = data.coins
+    const backupTokens: TokenData[] = data.coins
       .slice(0, 6)
       .map((coin) => ({
         baseToken: {
-          address: coin.item.id || "unknown",
-          name: coin.item.name || "Unknown Token",
-          symbol: coin.item.symbol?.toUpperCase() || "???",
+          id: coin.item.id,
+          address: coin.item.id,
+          name: coin.item.name,
+          symbol: coin.item.symbol,
+          thumb: coin.item.thumb
         },
         priceUsd: ((Math.random() * 0.0001)).toString(),
         volume24h: Math.max(Math.random() * 1000000, 1000).toString(),
         priceChange24h: (Math.random() * 20) - 10,
         liquidity: { usd: Math.max(1000000, Math.random() * 5000000) },
         fdv: Math.random() * 10000000,
+        marketCap: Math.random() * 10000000,
+        rank: Math.floor(Math.random() * 100) + 1
       }));
 
     if (!backupTokens.length) {

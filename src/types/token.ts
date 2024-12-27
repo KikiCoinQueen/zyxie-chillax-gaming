@@ -13,6 +13,8 @@ export interface TokenData {
     usd: number;
   };
   fdv: number;
+  marketCap?: number;
+  rank?: number;
 }
 
 export interface TrendingCoin {
