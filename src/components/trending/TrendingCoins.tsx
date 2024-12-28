@@ -19,13 +19,13 @@ export const TrendingCoins = () => {
       const coinsWithDetails = await Promise.all(
         trendingCoins.map(async (coin) => {
           try {
-            const coinData = await fetchCoinDetails(coin.baseToken.id);
+            const coinData = await fetchCoinDetails(coin.item.id);
             
             const analysis = await analyzeCoin(
-              coin.baseToken.name,
-              coin.priceChange24h,
-              coin.marketCap || 0,
-              parseFloat(coin.volume24h),
+              coin.item.name,
+              coin.item.data?.price_change_percentage_24h || 0,
+              coin.item.data?.market_cap || 0,
+              parseFloat(coin.item.data?.total_volume?.toString() || "0"),
               coinData
             );
 
@@ -35,13 +35,13 @@ export const TrendingCoins = () => {
               detailedData: coinData
             };
           } catch (error) {
-            console.error(`Error fetching details for ${coin.baseToken.id}:`, error);
+            console.error(`Error fetching details for ${coin.item.id}:`, error);
             
             const analysis = await analyzeCoin(
-              coin.baseToken.name,
-              coin.priceChange24h,
-              parseFloat(coin.fdv),
-              parseFloat(coin.volume24h)
+              coin.item.name,
+              coin.item.data?.price_change_percentage_24h || 0,
+              coin.item.data?.market_cap || 0,
+              parseFloat(coin.item.data?.total_volume?.toString() || "0")
             );
             
             return {
