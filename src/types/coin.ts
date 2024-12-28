@@ -62,3 +62,9 @@ export interface TrendingCoin {
     };
   };
 }
+
+export interface EnhancedTrendingCoin {
+  item: TrendingCoin['item'];
+  analysis?: any;
+  detailedData?: CoinDetails;
+}

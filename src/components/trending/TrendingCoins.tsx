@@ -15,10 +15,13 @@ export const TrendingCoins = () => {
   const { data: coins, isLoading, error } = useQuery({
     queryKey: ["trendingCoins"],
     queryFn: async () => {
-      const trendingCoins = await fetchCoinGeckoData();
+      const trendingData = await fetchCoinGeckoData();
+      
+      // Ensure we're working with the correct type
+      const trendingCoins = trendingData.coins as Array<{ item: TrendingCoin['item'] }>;
       
       const coinsWithDetails = await Promise.all(
-        trendingCoins.map(async (coin: TrendingCoin) => {
+        trendingCoins.map(async (coin) => {
           try {
             const coinData = await fetchCoinDetails(coin.item.id);
             
@@ -31,7 +34,7 @@ export const TrendingCoins = () => {
             );
 
             return {
-              ...coin,
+              item: coin.item,
               analysis,
               detailedData: coinData
             };
@@ -46,7 +49,7 @@ export const TrendingCoins = () => {
             );
             
             return {
-              ...coin,
+              item: coin.item,
               analysis
             };
           }

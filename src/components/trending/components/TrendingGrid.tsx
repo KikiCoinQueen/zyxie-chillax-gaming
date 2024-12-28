@@ -2,10 +2,10 @@ import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CoinAnalysisCard } from "../CoinAnalysisCard";
-import { TrendingCoin } from "@/types/coin";
+import { EnhancedTrendingCoin } from "@/types/coin";
 
 interface TrendingGridProps {
-  coins: (TrendingCoin & { analysis?: any })[];
+  coins: EnhancedTrendingCoin[];
   selectedCoin: string | null;
   onCoinSelect: (id: string) => void;
   isLoading: boolean;
