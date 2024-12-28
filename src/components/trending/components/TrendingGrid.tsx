@@ -2,9 +2,10 @@ import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CoinAnalysisCard } from "../CoinAnalysisCard";
+import { TrendingCoin } from "@/types/coin";
 
 interface TrendingGridProps {
-  coins: any[];
+  coins: (TrendingCoin & { analysis?: any })[];
   selectedCoin: string | null;
   onCoinSelect: (id: string) => void;
   isLoading: boolean;
@@ -32,7 +33,7 @@ export const TrendingGrid = ({ coins, selectedCoin, onCoinSelect, isLoading }: T
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {coins.map((coin, index) => (
         <motion.div 
-          key={coin.baseToken.id} 
+          key={coin.item.id} 
           className="space-y-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -40,20 +41,20 @@ export const TrendingGrid = ({ coins, selectedCoin, onCoinSelect, isLoading }: T
         >
           <Card 
             className="glass-card hover:scale-[1.02] transition-transform cursor-pointer"
-            onClick={() => onCoinSelect(coin.baseToken.id)}
+            onClick={() => onCoinSelect(coin.item.id)}
           >
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {coin.baseToken.thumb && (
+                  {coin.item.thumb && (
                     <img 
-                      src={coin.baseToken.thumb} 
-                      alt={coin.baseToken.name}
+                      src={coin.item.thumb} 
+                      alt={coin.item.name}
                       className="w-8 h-8 rounded-full"
                     />
                   )}
                   <div>
-                    <span className="text-lg">{coin.baseToken.symbol.toUpperCase()}</span>
+                    <span className="text-lg">{coin.item.symbol.toUpperCase()}</span>
                     <Badge variant="secondary" className="ml-2">
                       #{index + 1}
                     </Badge>
@@ -63,7 +64,7 @@ export const TrendingGrid = ({ coins, selectedCoin, onCoinSelect, isLoading }: T
             </CardHeader>
           </Card>
 
-          {selectedCoin === coin.baseToken.id && coin.analysis && (
+          {selectedCoin === coin.item.id && coin.analysis && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -72,9 +73,9 @@ export const TrendingGrid = ({ coins, selectedCoin, onCoinSelect, isLoading }: T
             >
               <CoinAnalysisCard
                 analysis={coin.analysis}
-                symbol={coin.baseToken.symbol}
-                marketCap={coin.marketCap}
-                priceChange={coin.priceChange24h}
+                symbol={coin.item.symbol}
+                marketCap={coin.item.data?.market_cap}
+                priceChange={coin.item.data?.price_change_percentage_24h}
                 rank={index + 1}
               />
             </motion.div>

@@ -7,6 +7,7 @@ import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 import { TrendingHeader } from "./components/TrendingHeader";
 import { TrendingGrid } from "./components/TrendingGrid";
 import { TrendingFooter } from "./components/TrendingFooter";
+import { TrendingCoin } from "@/types/coin";
 
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -17,7 +18,7 @@ export const TrendingCoins = () => {
       const trendingCoins = await fetchCoinGeckoData();
       
       const coinsWithDetails = await Promise.all(
-        trendingCoins.map(async (coin) => {
+        trendingCoins.map(async (coin: TrendingCoin) => {
           try {
             const coinData = await fetchCoinDetails(coin.item.id);
             
