@@ -1,4 +1,4 @@
-import { Brain, Activity, Search, Heart, ChevronRight, Construction, Home, LineChart } from "lucide-react";
+import { Brain, Activity, Search, Heart, ChevronRight, Home, LineChart, Rocket, Zap, BarChart3, Wallet } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -26,14 +26,37 @@ const mainFeatures = [
     url: "#trending",
     icon: Activity,
   },
-];
-
-const aiFeatures = [
   {
     title: "Token Discovery",
     url: "#discovery",
     icon: Search,
   },
+];
+
+const tradingFeatures = [
+  {
+    title: "Portfolio",
+    url: "#portfolio",
+    icon: Wallet,
+  },
+  {
+    title: "Hot Pairs",
+    url: "#hot-pairs",
+    icon: Zap,
+  },
+  {
+    title: "Meme Scanner",
+    url: "#meme-scanner",
+    icon: Rocket,
+  },
+  {
+    title: "Market Stats",
+    url: "#market-stats",
+    icon: BarChart3,
+  },
+];
+
+const aiFeatures = [
   {
     title: "Market Mood",
     url: "#market-mood",
@@ -60,6 +83,25 @@ export function AppSidebar() {
                     <a href={item.url} className="flex items-center gap-2">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Trading Tools</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {tradingFeatures.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url} className="flex items-center gap-2">
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
