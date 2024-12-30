@@ -7,7 +7,8 @@ import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 import { TrendingHeader } from "./components/TrendingHeader";
 import { TrendingGrid } from "./components/TrendingGrid";
 import { TrendingFooter } from "./components/TrendingFooter";
-import { TrendingCoin } from "@/types/coin";
+import { TrendingCoin, EnhancedTrendingCoin } from "@/types/coin";
+import { TokenData } from "@/types/token";
 
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -17,11 +18,26 @@ export const TrendingCoins = () => {
     queryFn: async () => {
       const trendingData = await fetchCoinGeckoData();
       
-      // Ensure we're working with the correct type
-      const trendingCoins = trendingData.coins as Array<{ item: TrendingCoin['item'] }>;
+      // Map TokenData to the format we need
+      const mappedCoins = trendingData.map(token => ({
+        item: {
+          id: token.baseToken.id,
+          coin_id: 0, // Default value since TokenData doesn't have this
+          name: token.baseToken.name,
+          symbol: token.baseToken.symbol,
+          market_cap_rank: token.rank || 999,
+          thumb: token.baseToken.thumb || "",
+          price_btc: 0, // Default value
+          data: {
+            price_change_percentage_24h: token.priceChange24h,
+            market_cap: parseFloat(token.fdv.toString()),
+            total_volume: parseFloat(token.volume24h)
+          }
+        }
+      }));
       
       const coinsWithDetails = await Promise.all(
-        trendingCoins.map(async (coin) => {
+        mappedCoins.map(async (coin) => {
           try {
             const coinData = await fetchCoinDetails(coin.item.id);
             
