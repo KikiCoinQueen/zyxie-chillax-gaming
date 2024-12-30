@@ -1,4 +1,4 @@
-import { Brain, Activity, Search, Heart, ChevronRight, Construction } from "lucide-react";
+import { Brain, Activity, Search, Heart, ChevronRight, Construction, Home, LineChart } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,33 +10,38 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const workingFeatures = [
+const mainFeatures = [
   {
-    title: "Market Mood Ring",
-    url: "#market-mood",
-    icon: Brain,
+    title: "Dashboard",
+    url: "/",
+    icon: Home,
   },
   {
-    title: "Crypto Pulse",
-    url: "#crypto-pulse",
+    title: "Market Analysis",
+    url: "#market-analysis",
+    icon: LineChart,
+  },
+  {
+    title: "Trending",
+    url: "#trending",
     icon: Activity,
-  },
-  {
-    title: "Solana Memes",
-    url: "#solana-memes",
-    icon: ChevronRight,
   },
 ];
 
-const underConstruction = [
+const aiFeatures = [
   {
     title: "Token Discovery",
     url: "#discovery",
     icon: Search,
   },
   {
-    title: "Meme Analyzer",
-    url: "#analyzer",
+    title: "Market Mood",
+    url: "#market-mood",
+    icon: Brain,
+  },
+  {
+    title: "Sentiment Analysis",
+    url: "#sentiment",
     icon: Heart,
   },
 ];
@@ -44,12 +49,12 @@ const underConstruction = [
 export function AppSidebar() {
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="pt-16">
         <SidebarGroup>
-          <SidebarGroupLabel>Working Features</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {workingFeatures.map((item) => (
+              {mainFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url} className="flex items-center gap-2">
@@ -64,16 +69,16 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Under Construction</SidebarGroupLabel>
+          <SidebarGroupLabel>AI Features</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {underConstruction.map((item) => (
+              {aiFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url} className="flex items-center gap-2">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
-                      <Construction className="w-4 h-4 ml-auto text-yellow-500" />
+                      <ChevronRight className="w-4 h-4 ml-auto" />
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
