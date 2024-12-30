@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const Index = () => {
   const container = {
@@ -38,79 +39,75 @@ const Index = () => {
             variants={container}
             initial="hidden"
             animate="show"
-            className="container mx-auto px-4 space-y-16 py-8"
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24"
           >
-            <motion.div variants={item} className="relative z-10">
+            <motion.section variants={item} className="relative z-10">
               <Hero />
-            </motion.div>
+            </motion.section>
 
-            <motion.div variants={item} className="relative z-10">
+            <Separator className="my-12 opacity-50" />
+
+            <motion.section variants={item} className="relative z-10">
+              <div className="mb-16">
+                <h2 className="text-3xl font-bold text-center mb-4 gradient-text">Trending Coins</h2>
+                <p className="text-muted-foreground text-center max-w-2xl mx-auto">
+                  Discover the hottest cryptocurrencies making waves in the market right now.
+                </p>
+              </div>
               <TrendingCoins />
-            </motion.div>
+            </motion.section>
 
-            <motion.div variants={item} className="relative z-10">
+            <Separator className="my-12 opacity-50" />
+
+            <motion.section variants={item} className="relative z-10">
+              <div className="mb-16">
+                <h2 className="text-3xl font-bold text-center mb-4 gradient-text">Token Discovery</h2>
+                <p className="text-muted-foreground text-center max-w-2xl mx-auto">
+                  Explore and analyze new tokens with our advanced discovery tools.
+                </p>
+              </div>
               <TokenDiscovery />
-            </motion.div>
+            </motion.section>
 
-            <motion.div variants={item} className="relative z-10">
-              <Card className="p-6">
-                <CardContent>
-                  <h3 className="text-xl font-bold mb-4">🎯 Market Mood Ring</h3>
+            <Separator className="my-12 opacity-50" />
+
+            <motion.section variants={item} className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card className="glass-card hover:scale-[1.02] transition-all duration-300">
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-bold mb-4 gradient-text">🎯 Market Mood Ring</h3>
                   <p className="text-muted-foreground">
-                    This component was intended to display real-time market sentiment analysis using 
-                    volume, price action, and social signals to gauge overall market mood.
+                    Real-time market sentiment analysis using volume, price action, and social signals to gauge overall market mood.
                   </p>
                 </CardContent>
               </Card>
-            </motion.div>
 
-            <motion.div variants={item} className="relative z-10">
-              <Card className="p-6">
-                <CardContent>
-                  <h3 className="text-xl font-bold mb-4">📊 Market Sentiment</h3>
+              <Card className="glass-card hover:scale-[1.02] transition-all duration-300">
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-bold mb-4 gradient-text">📊 Market Sentiment</h3>
                   <p className="text-muted-foreground">
-                    This section was designed to analyze and display market sentiment for top tokens,
-                    showing bullish/bearish indicators based on price action and volume metrics.
+                    Comprehensive analysis of market sentiment for top tokens, showing bullish/bearish indicators.
                   </p>
                 </CardContent>
               </Card>
-            </motion.div>
 
-            <motion.div variants={item} className="relative z-10">
-              <Card className="p-6">
-                <CardContent>
-                  <h3 className="text-xl font-bold mb-4">⚡ Crypto Pulse</h3>
+              <Card className="glass-card hover:scale-[1.02] transition-all duration-300">
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-bold mb-4 gradient-text">⚡ Crypto Pulse</h3>
                   <p className="text-muted-foreground">
-                    Originally planned to show real-time market movements and significant price actions
-                    across different cryptocurrencies.
+                    Real-time market movements and significant price actions across different cryptocurrencies.
                   </p>
                 </CardContent>
               </Card>
-            </motion.div>
 
-            <motion.div variants={item} className="relative z-10">
-              <Card className="p-6">
-                <CardContent>
-                  <h3 className="text-xl font-bold mb-4">🚀 Solana Meme Coins</h3>
+              <Card className="glass-card hover:scale-[1.02] transition-all duration-300">
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-bold mb-4 gradient-text">🚀 Solana Meme Gems</h3>
                   <p className="text-muted-foreground">
-                    This section was meant to track and display trending meme coins on the Solana network,
-                    helping users discover new opportunities.
+                    Track and discover trending meme coins on the Solana network for new opportunities.
                   </p>
                 </CardContent>
               </Card>
-            </motion.div>
-
-            <motion.div variants={item} className="relative z-10">
-              <Card className="p-6">
-                <CardContent>
-                  <h3 className="text-xl font-bold mb-4">💎 Crypto Section</h3>
-                  <p className="text-muted-foreground">
-                    A comprehensive overview of cryptocurrency market data and trends was planned for
-                    this section.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
+            </motion.section>
           </motion.div>
 
           {/* Floating gradient orbs */}
