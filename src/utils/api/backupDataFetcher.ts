@@ -19,6 +19,10 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
     }
 
     const backupTokens: TokenData[] = data.coins
+      .filter(coin => {
+        const marketCap = coin.item.data?.market_cap || 0;
+        return marketCap < 100000000 && marketCap > 10000;
+      })
       .slice(0, 6)
       .map((coin) => ({
         baseToken: {
@@ -29,11 +33,11 @@ export const fetchBackupData = async (): Promise<TokenData[]> => {
           thumb: coin.item.thumb
         },
         priceUsd: ((Math.random() * 0.0001)).toString(),
-        volume24h: Math.max(Math.random() * 1000000, 1000).toString(),
+        volume24h: Math.max(Math.random() * 1000000, 10000).toString(),
         priceChange24h: (Math.random() * 20) - 10,
-        liquidity: { usd: Math.max(1000000, Math.random() * 5000000) },
-        fdv: Math.random() * 10000000,
-        marketCap: Math.random() * 10000000,
+        liquidity: { usd: Math.max(10000, Math.random() * 500000) },
+        fdv: Math.random() * 100000000,
+        marketCap: Math.random() * 100000000,
         rank: Math.floor(Math.random() * 100) + 1
       }));
 

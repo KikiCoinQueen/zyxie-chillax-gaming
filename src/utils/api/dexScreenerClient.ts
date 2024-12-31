@@ -44,7 +44,15 @@ export const fetchDexScreenerData = async (): Promise<TokenData[]> => {
       .filter((pair: any) => {
         const volume = parseFloat(pair.volume24h);
         const fdv = parseFloat(pair.fdv);
-        return !isNaN(volume) && !isNaN(fdv) && volume > 1000 && fdv < 10000000;
+        // Only include pairs with:
+        // - Volume > $10k
+        // - FDV < $100M
+        // - FDV > $10k (filter out dead tokens)
+        return !isNaN(volume) && 
+               !isNaN(fdv) && 
+               volume > 10000 && 
+               fdv < 100000000 &&
+               fdv > 10000;
       })
       .map((pair: any) => ({
         baseToken: {

@@ -22,9 +22,19 @@ export const useTrendingCoins = () => {
             try {
               const coinData = await fetchCoinDetails(coin.baseToken.address) as CoinDetails;
               
-              const marketCap = coinData?.market_data?.market_cap?.usd;
+              // Skip coins with market cap > $100M or < $10k
+              const marketCap = coinData?.market_data?.market_cap?.usd || 0;
+              if (marketCap > 100000000 || marketCap < 10000) {
+                return null;
+              }
+
               const priceChange = coinData?.market_data?.price_change_percentage_24h;
               const volume = coinData?.market_data?.total_volume?.usd;
+
+              // Skip coins with very low volume
+              if (volume && volume < 10000) {
+                return null;
+              }
 
               const analysis = await analyzeCoin(
                 coin.baseToken.name,
@@ -34,6 +44,11 @@ export const useTrendingCoins = () => {
                 coinData
               );
 
+              // Only return coins with high enough gem scores
+              if (analysis.gemScore < 60) {
+                return null;
+              }
+
               return {
                 ...coin,
                 analysis,
@@ -41,25 +56,25 @@ export const useTrendingCoins = () => {
               };
             } catch (error) {
               console.error(`Error fetching details for ${coin.baseToken.id}:`, error);
-              
-              const analysis = await analyzeCoin(
-                coin.baseToken.name,
-                coin.priceChange24h,
-                parseFloat(coin.fdv),
-                parseFloat(coin.volume24h)
-              );
-              
-              return {
-                ...coin,
-                analysis
-              };
+              return null;
             }
           })
         );
         
-        return analyzedCoins
-          .sort((a, b) => (b.analysis?.interestScore || 0) - (a.analysis?.interestScore || 0))
+        // Filter out null values and sort by gem score
+        const validCoins = analyzedCoins
+          .filter(coin => coin !== null)
+          .sort((a, b) => (b?.analysis?.gemScore || 0) - (a?.analysis?.gemScore || 0))
           .slice(0, 6);
+
+        if (validCoins.length === 0) {
+          toast.info("No micro-cap gems found at the moment", {
+            description: "Looking for coins under $100M market cap with high potential"
+          });
+        }
+
+        console.log("Found micro-cap gems:", validCoins);
+        return validCoins;
       } catch (error) {
         console.error("Error fetching trending coins:", error);
         throw error;
