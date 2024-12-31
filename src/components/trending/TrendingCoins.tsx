@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCoinGeckoData, fetchCoinDetails } from "@/utils/api/coinGeckoClient";
 import { analyzeCoin } from "@/utils/ai/coinAnalysis";
 import { TrendingHeader } from "./components/TrendingHeader";
 import { TrendingGrid } from "./components/TrendingGrid";
 import { TrendingFooter } from "./components/TrendingFooter";
-import { TrendingCoin, EnhancedTrendingCoin } from "@/types/coin";
-import { TokenData } from "@/types/token";
+import { EnhancedTrendingCoin } from "@/types/coin";
 
 export const TrendingCoins = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -18,67 +17,47 @@ export const TrendingCoins = () => {
     queryFn: async () => {
       const trendingData = await fetchCoinGeckoData();
       
-      // Map TokenData to the format we need
-      const mappedCoins = trendingData.map(token => ({
-        item: {
-          id: token.baseToken.id,
-          coin_id: 0, // Default value since TokenData doesn't have this
-          name: token.baseToken.name,
-          symbol: token.baseToken.symbol,
-          market_cap_rank: token.rank || 999,
-          thumb: token.baseToken.thumb || "",
-          price_btc: 0, // Default value
-          data: {
-            price_change_percentage_24h: token.priceChange24h,
-            market_cap: parseFloat(token.fdv.toString()),
-            total_volume: parseFloat(token.volume24h)
-          }
-        }
-      }));
-      
       const coinsWithDetails = await Promise.all(
-        mappedCoins.map(async (coin) => {
+        trendingData.map(async (coin) => {
           try {
-            const coinData = await fetchCoinDetails(coin.item.id);
+            const coinData = await fetchCoinDetails(coin.baseToken.id);
             
             const analysis = await analyzeCoin(
-              coin.item.name,
-              coin.item.data?.price_change_percentage_24h || 0,
-              coin.item.data?.market_cap || 0,
-              parseFloat(coin.item.data?.total_volume?.toString() || "0"),
+              coin.baseToken.name,
+              coin.priceChange24h,
+              parseFloat(coin.fdv.toString()),
+              parseFloat(coin.volume24h),
               coinData
             );
 
             return {
-              item: coin.item,
+              item: {
+                id: coin.baseToken.id,
+                name: coin.baseToken.name,
+                symbol: coin.baseToken.symbol,
+                thumb: coin.baseToken.thumb,
+                data: {
+                  price_change_percentage_24h: coin.priceChange24h,
+                  market_cap: coin.fdv,
+                  total_volume: parseFloat(coin.volume24h)
+                }
+              },
               analysis,
               detailedData: coinData
             };
           } catch (error) {
-            console.error(`Error fetching details for ${coin.item.id}:`, error);
-            
-            const analysis = await analyzeCoin(
-              coin.item.name,
-              coin.item.data?.price_change_percentage_24h || 0,
-              coin.item.data?.market_cap || 0,
-              parseFloat(coin.item.data?.total_volume?.toString() || "0")
-            );
-            
-            return {
-              item: coin.item,
-              analysis
-            };
+            console.error(`Error analyzing ${coin.baseToken.name}:`, error);
+            return null;
           }
         })
       );
-      
+
+      // Filter out failed analyses and sort by gem score
       return coinsWithDetails
-        .sort((a, b) => (b.analysis?.interestScore || 0) - (a.analysis?.interestScore || 0))
-        .slice(0, 6);
+        .filter((coin): coin is EnhancedTrendingCoin => coin !== null)
+        .sort((a, b) => (b.analysis?.gemScore || 0) - (a.analysis?.gemScore || 0));
     },
-    refetchInterval: 60000,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchInterval: 60000
   });
 
   if (error) {
@@ -92,14 +71,20 @@ export const TrendingCoins = () => {
   }
 
   return (
-    <section className="py-20 px-4" id="trending-coins">
+    <section className="py-20 px-4 bg-gradient-to-b from-background via-background/50 to-background" id="trending-coins">
       <div className="container max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <TrendingHeader />
+          <div className="flex items-center justify-center gap-3 mb-12">
+            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <h2 className="text-3xl font-display font-bold gradient-text text-center">
+              AI-Powered Gem Scanner
+            </h2>
+            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+          </div>
           
           <TrendingGrid 
             coins={coins || []}
