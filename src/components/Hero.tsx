@@ -4,7 +4,7 @@ import { LineChart, TrendingUp, Shield, Activity } from "lucide-react";
 export const Hero = () => {
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden py-20">
-      <div className="absolute inset-0 bg-grid-white/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-grid-white/5 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background pointer-events-none" />
       
       <motion.div 
@@ -14,23 +14,28 @@ export const Hero = () => {
         className="container relative z-10 max-w-5xl mx-auto px-4"
       >
         <div className="text-center space-y-8">
-          <motion.h1 
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-6 text-gradient-primary tracking-tight"
+            className="relative"
           >
-            CryptoMarket
-            <span className="text-gradient-secondary"> Analytics</span>
-          </motion.h1>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-2 tracking-tight">
+              <span className="gradient-text">Crypto</span>
+              <span className="text-foreground">Market</span>
+            </h1>
+            <p className="text-2xl md:text-3xl text-muted-foreground font-light">
+              Professional Trading Analytics
+            </p>
+          </motion.div>
           
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+            className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
           >
-            Professional Market Analysis & Real-Time Tracking with AI-Powered Insights
+            Advanced market analysis & real-time tracking with AI-powered insights
           </motion.p>
 
           <motion.div 
@@ -39,11 +44,11 @@ export const Hero = () => {
             transition={{ delay: 0.6 }}
             className="flex flex-wrap justify-center gap-4"
           >
-            <a href="#market-analysis" className="inline-flex items-center px-6 py-3 rounded-lg bg-primary/20 border border-primary/20 hover:bg-primary/30 transition-colors">
+            <a href="#market-analysis" className="inline-flex items-center px-6 py-3 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors">
               <LineChart className="w-5 h-5 mr-2" />
               Market Analysis
             </a>
-            <a href="#trending" className="inline-flex items-center px-6 py-3 rounded-lg bg-secondary/20 border border-secondary/20 hover:bg-secondary/30 transition-colors">
+            <a href="#trending" className="inline-flex items-center px-6 py-3 rounded-lg bg-secondary/10 border border-secondary/20 hover:bg-secondary/20 transition-colors">
               <TrendingUp className="w-5 h-5 mr-2" />
               View Trending
             </a>
@@ -59,25 +64,25 @@ export const Hero = () => {
           <div className="glass-card p-6 rounded-xl hover-card">
             <LineChart className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-semibold mb-2">Advanced Analytics</h3>
-            <p className="text-sm text-muted-foreground">Real-time market analysis and predictions</p>
+            <p className="text-sm text-muted-foreground">Real-time market analysis</p>
           </div>
           
           <div className="glass-card p-6 rounded-xl hover-card">
             <TrendingUp className="w-8 h-8 text-secondary mb-4" />
             <h3 className="font-semibold mb-2">Market Trends</h3>
-            <p className="text-sm text-muted-foreground">Track emerging opportunities</p>
+            <p className="text-sm text-muted-foreground">Track opportunities</p>
           </div>
           
           <div className="glass-card p-6 rounded-xl hover-card">
             <Activity className="w-8 h-8 text-purple-500 mb-4" />
             <h3 className="font-semibold mb-2">Live Updates</h3>
-            <p className="text-sm text-muted-foreground">24/7 market monitoring</p>
+            <p className="text-sm text-muted-foreground">24/7 monitoring</p>
           </div>
           
           <div className="glass-card p-6 rounded-xl hover-card">
             <Shield className="w-8 h-8 text-green-500 mb-4" />
             <h3 className="font-semibold mb-2">Secure Platform</h3>
-            <p className="text-sm text-muted-foreground">Enterprise-grade security</p>
+            <p className="text-sm text-muted-foreground">Enterprise security</p>
           </div>
         </motion.div>
       </motion.div>

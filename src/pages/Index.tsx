@@ -11,7 +11,7 @@ const Index = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-b from-background via-background/95 to-background relative overflow-hidden">
         {/* Background patterns */}
-        <div className="absolute inset-0 bg-grid-white/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-grid-white/5 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
         
         <AppSidebar />
@@ -29,7 +29,6 @@ const Index = () => {
                 viewport={{ once: true }}
                 className="glass-card p-8 rounded-xl"
               >
-                <h2 className="text-3xl font-bold text-center mb-8 text-gradient-primary">Trending Coins</h2>
                 <TrendingCoins />
               </motion.div>
             </section>
@@ -44,7 +43,6 @@ const Index = () => {
                 viewport={{ once: true }}
                 className="glass-card p-8 rounded-xl"
               >
-                <h2 className="text-3xl font-bold text-center mb-8 text-gradient-primary">Token Discovery</h2>
                 <TokenDiscovery />
               </motion.div>
             </section>

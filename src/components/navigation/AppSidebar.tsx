@@ -22,12 +22,12 @@ const mainFeatures = [
     icon: LineChart,
   },
   {
-    title: "Trending",
-    url: "#trending",
+    title: "Live Trading",
+    url: "#trading",
     icon: Activity,
   },
   {
-    title: "Token Discovery",
+    title: "Discovery",
     url: "#discovery",
     icon: Search,
   },
@@ -45,25 +45,25 @@ const tradingFeatures = [
     icon: Zap,
   },
   {
-    title: "Meme Scanner",
-    url: "#meme-scanner",
+    title: "Market Scanner",
+    url: "#scanner",
     icon: Rocket,
   },
   {
-    title: "Market Stats",
-    url: "#market-stats",
+    title: "Statistics",
+    url: "#stats",
     icon: BarChart3,
   },
 ];
 
 const aiFeatures = [
   {
-    title: "Market Mood",
-    url: "#market-mood",
+    title: "AI Predictions",
+    url: "#predictions",
     icon: Brain,
   },
   {
-    title: "Sentiment Analysis",
+    title: "Sentiment",
     url: "#sentiment",
     icon: Heart,
   },
@@ -80,7 +80,7 @@ export function AppSidebar() {
               {mainFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
+                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                     </a>
@@ -98,7 +98,7 @@ export function AppSidebar() {
               {tradingFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
+                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                       <ChevronRight className="w-4 h-4 ml-auto" />
@@ -117,7 +117,7 @@ export function AppSidebar() {
               {aiFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
+                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                       <ChevronRight className="w-4 h-4 ml-auto" />
