@@ -1,4 +1,4 @@
-import { Brain, Activity, Search, Heart, ChevronRight, Home, LineChart, Rocket, Zap, BarChart3, Wallet } from "lucide-react";
+import { Brain, Activity, Search, Heart, ChevronRight, Home, LineChart, Rocket, Zap, BarChart3, Wallet, Settings, HelpCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -69,9 +69,22 @@ const aiFeatures = [
   },
 ];
 
+const bottomFeatures = [
+  {
+    title: "Settings",
+    url: "#settings",
+    icon: Settings,
+  },
+  {
+    title: "Help",
+    url: "#help",
+    icon: HelpCircle,
+  },
+];
+
 export function AppSidebar() {
   return (
-    <Sidebar>
+    <Sidebar className="border-r border-white/5 bg-card/30 backdrop-blur-xl">
       <SidebarContent className="pt-16">
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -80,9 +93,9 @@ export function AppSidebar() {
               {mainFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
+                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group">
+                      <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <span className="text-muted-foreground group-hover:text-primary transition-colors">{item.title}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -98,10 +111,10 @@ export function AppSidebar() {
               {tradingFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group">
+                      <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <span className="text-muted-foreground group-hover:text-primary transition-colors">{item.title}</span>
+                      <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 text-primary transition-all" />
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -117,10 +130,10 @@ export function AppSidebar() {
               {aiFeatures.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group">
+                      <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <span className="text-muted-foreground group-hover:text-primary transition-colors">{item.title}</span>
+                      <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 text-primary transition-all" />
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -128,6 +141,25 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <div className="mt-auto">
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {bottomFeatures.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group">
+                        <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="text-muted-foreground group-hover:text-primary transition-colors">{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
