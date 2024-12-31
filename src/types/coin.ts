@@ -47,12 +47,12 @@ export interface CoinGeckoResponse {
 export interface TrendingCoin {
   item: {
     id: string;
-    coin_id: number;
+    coin_id?: number;
     name: string;
     symbol: string;
-    market_cap_rank: number;
+    market_cap_rank?: number;
     thumb: string;
-    price_btc: number;
+    price_btc?: number;
     data: {
       price_change_percentage_24h?: number;
       market_cap?: number;
@@ -64,7 +64,17 @@ export interface TrendingCoin {
 }
 
 export interface EnhancedTrendingCoin {
-  item: TrendingCoin['item'];
-  analysis?: any;
+  item: {
+    id: string;
+    name: string;
+    symbol: string;
+    thumb: string;
+    data: {
+      price_change_percentage_24h: number;
+      market_cap: number;
+      total_volume: number;
+    };
+  };
+  analysis: any;
   detailedData?: CoinDetails;
 }
