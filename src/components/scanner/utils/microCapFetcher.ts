@@ -8,7 +8,7 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
   try {
     // First get a complete list of coins with market data
     const response = await fetch(
-      `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&sparkline=false`
+      `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_asc&per_page=250&sparkline=false&price_change_percentage=24h`
     );
 
     if (!response.ok) {
@@ -27,10 +27,10 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
         // Verify market cap is under 100M and above 10k
         const isValidMarketCap = !isNaN(marketCap) && marketCap < 100000000 && marketCap > 10000;
         // Ensure some trading activity
-        const hasVolume = !isNaN(volume) && volume > 10000;
+        const hasVolume = !isNaN(volume) && volume > 1000;
         
         if (isValidMarketCap) {
-          console.log(`${coin.symbol}: Market Cap $${(marketCap / 1000000).toFixed(2)}M`);
+          console.log(`${coin.symbol}: Market Cap $${(marketCap / 1000000).toFixed(2)}M, Volume: $${(volume / 1000000).toFixed(2)}M`);
         }
         
         return isValidMarketCap && hasVolume;
@@ -46,10 +46,16 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
         price: coin.current_price,
         rank: coin.market_cap_rank
       }))
+      // Sort by volume/mcap ratio to find most active micro-caps
       .sort((a: MicroCapCoin, b: MicroCapCoin) => b.volume24h / b.marketCap - a.volume24h / a.marketCap)
       .slice(0, 6);
 
     console.log("Found", microCaps.length, "valid micro-cap coins");
+    
+    if (microCaps.length === 0) {
+      console.log("No micro-caps found - API response:", data.slice(0, 5));
+    }
+    
     return microCaps;
   } catch (error) {
     console.error("Error fetching micro-cap coins:", error);
