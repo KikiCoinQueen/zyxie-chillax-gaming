@@ -21,13 +21,13 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
     // Filter for true micro-caps under $100M
     const microCaps = data
       .filter((coin: any) => {
-        const marketCap = coin.market_cap;
-        const volume = coin.total_volume;
+        const marketCap = parseFloat(coin.market_cap);
+        const volume = parseFloat(coin.total_volume);
         
         // Verify market cap is under 100M and above 10k
-        const isValidMarketCap = marketCap && marketCap < 100000000 && marketCap > 10000;
+        const isValidMarketCap = !isNaN(marketCap) && marketCap < 100000000 && marketCap > 10000;
         // Ensure some trading activity
-        const hasVolume = volume && volume > 10000;
+        const hasVolume = !isNaN(volume) && volume > 10000;
         
         if (isValidMarketCap) {
           console.log(`${coin.symbol}: Market Cap $${(marketCap / 1000000).toFixed(2)}M`);
@@ -40,13 +40,13 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
         name: coin.name,
         symbol: coin.symbol,
         image: coin.image,
-        marketCap: coin.market_cap,
-        volume24h: coin.total_volume,
+        marketCap: parseFloat(coin.market_cap),
+        volume24h: parseFloat(coin.total_volume),
         priceChange24h: coin.price_change_percentage_24h || 0,
         price: coin.current_price,
         rank: coin.market_cap_rank
       }))
-      .sort((a: MicroCapCoin, b: MicroCapCoin) => a.marketCap - b.marketCap)
+      .sort((a: MicroCapCoin, b: MicroCapCoin) => b.volume24h / b.marketCap - a.volume24h / a.marketCap)
       .slice(0, 6);
 
     console.log("Found", microCaps.length, "valid micro-cap coins");

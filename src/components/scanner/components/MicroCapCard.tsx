@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MicroCapCoin } from "../types/microCap";
 import { formatMarketCap, formatPercentage } from "@/utils/formatters";
-import { TrendingUp, Volume2 } from "lucide-react";
+import { TrendingUp, Volume2, AlertTriangle } from "lucide-react";
 
 interface MicroCapCardProps {
   coin: MicroCapCoin;
