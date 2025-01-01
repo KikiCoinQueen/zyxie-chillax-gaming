@@ -24,33 +24,82 @@ export const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
   console.log("Fetching from CoinGecko...");
   
   try {
-    const data = await fetchWithRetry<CoinGeckoResponse>(
+    // First fetch trending coins
+    const trendingData = await fetchWithRetry<CoinGeckoResponse>(
       `${COINGECKO_BASE_URL}/search/trending`
     );
     
-    if (!validateTokenData(data)) {
-      console.warn("Invalid data structure from CoinGecko API:", data);
+    if (!validateTokenData(trendingData)) {
+      console.warn("Invalid data structure from CoinGecko API:", trendingData);
       return BACKUP_PAIRS;
     }
 
-    return data.coins.slice(0, 6).map((coin) => ({
-      baseToken: {
-        id: coin.item.id,
-        address: coin.item.id,
-        name: coin.item.name,
-        symbol: coin.item.symbol,
-        thumb: coin.item.thumb,
-      },
-      priceUsd: (coin.item.price_btc ? (coin.item.price_btc * 40000).toString() : "0"),
-      volume24h: (coin.item.price_btc ? (coin.item.price_btc * 40000 * 1000000).toString() : "0"),
-      priceChange24h: coin.item.data?.price_change_percentage_24h || 0,
-      liquidity: { usd: coin.item.data?.market_cap || 0 },
-      fdv: coin.item.data?.market_cap || 0,
-      marketCap: coin.item.data?.market_cap || 0,
-      rank: coin.item.market_cap_rank || 999,
-      lastUpdated: new Date().toISOString(),
-      confidence: 0.8
-    }));
+    // Fetch detailed data for each coin to get accurate market caps
+    const detailedCoins = await Promise.all(
+      trendingData.coins.map(async (coin) => {
+        try {
+          const details = await fetchWithRetry<any>(
+            `${COINGECKO_BASE_URL}/coins/${coin.item.id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`
+          );
+
+          if (!details?.market_data?.market_cap?.usd) {
+            console.log(`No market cap data for ${coin.item.name}`);
+            return null;
+          }
+
+          const marketCap = details.market_data.market_cap.usd;
+          console.log(`${coin.item.name} market cap: $${marketCap}`);
+
+          // Filter for micro caps under 100M
+          if (marketCap > 100000000) {
+            console.log(`Skipping ${coin.item.name} - market cap too high: $${marketCap}`);
+            return null;
+          }
+
+          // Filter out dead tokens
+          if (marketCap < 10000) {
+            console.log(`Skipping ${coin.item.name} - market cap too low: $${marketCap}`);
+            return null;
+          }
+
+          return {
+            baseToken: {
+              id: coin.item.id,
+              address: coin.item.id,
+              name: coin.item.name,
+              symbol: coin.item.symbol,
+              thumb: coin.item.thumb,
+            },
+            priceUsd: details.market_data.current_price.usd.toString(),
+            volume24h: details.market_data.total_volume.usd.toString(),
+            priceChange24h: details.market_data.price_change_percentage_24h || 0,
+            liquidity: { usd: details.market_data.total_volume.usd || 0 },
+            fdv: marketCap,
+            marketCap: marketCap,
+            rank: coin.item.market_cap_rank || 999,
+            lastUpdated: new Date().toISOString(),
+            confidence: 0.8
+          };
+        } catch (error) {
+          console.error(`Error fetching details for ${coin.item.name}:`, error);
+          return null;
+        }
+      })
+    );
+
+    // Filter out null values and sort by market cap
+    const validCoins = detailedCoins
+      .filter((coin): coin is TokenData => coin !== null)
+      .sort((a, b) => a.marketCap - b.marketCap)
+      .slice(0, 6);
+
+    if (validCoins.length === 0) {
+      console.log("No valid micro-cap coins found, using backup pairs");
+      return BACKUP_PAIRS;
+    }
+
+    console.log("Found valid micro-cap coins:", validCoins.map(c => `${c.baseToken.name}: $${c.marketCap}`));
+    return validCoins;
   } catch (error) {
     console.error("Error fetching CoinGecko data:", error);
     handleApiError(error, "CoinGecko");

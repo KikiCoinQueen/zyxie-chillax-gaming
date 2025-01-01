@@ -11,7 +11,7 @@ interface CoinData {
   community_score?: number;
 }
 
-interface CoinCardProps {
+export interface CoinCardProps {
   id: string;
   coin_id: number;
   name: string;
