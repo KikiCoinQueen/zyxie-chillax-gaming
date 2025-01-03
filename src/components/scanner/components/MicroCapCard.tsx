@@ -4,7 +4,7 @@ import { MicroCapCoin } from "../types/microCap";
 import { formatNumber } from "@/utils/formatters";
 import { ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
 
-interface MicroCapCardProps {
+export interface MicroCapCardProps {
   coin: MicroCapCoin;
 }
 

@@ -54,12 +54,9 @@ export const MicroCapGrid = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: index * 0.1 }}
+          onClick={() => onCoinSelect(coin.id)}
         >
-          <MicroCapCard
-            coin={coin}
-            isSelected={selectedCoin === coin.id}
-            onSelect={() => onCoinSelect(coin.id)}
-          />
+          <MicroCapCard coin={coin} />
         </motion.div>
       ))}
     </div>
