@@ -2,13 +2,23 @@ import { MicroCapCoin } from "../types/microCap";
 import { withRetry } from "@/utils/retryUtils";
 
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
+const API_KEY = "CG-Demo"; // Using demo key for development
 
 export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
   console.log("Fetching micro-cap coins...");
   
   return withRetry(async () => {
+    const params = new URLSearchParams({
+      vs_currency: 'usd',
+      order: 'market_cap_asc',
+      per_page: '250',
+      sparkline: 'false',
+      price_change_percentage: '24h',
+      x_cg_demo_api_key: API_KEY
+    });
+
     const response = await fetch(
-      `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_asc&per_page=250&sparkline=false&price_change_percentage=24h&x_cg_demo_api_key=CG-Demo`,
+      `${COINGECKO_API}/coins/markets?${params}`,
       {
         headers: {
           'Accept': 'application/json',
@@ -19,9 +29,17 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        console.error("Rate limit exceeded, retrying...");
+        console.error("Rate limit exceeded");
         throw new Error("Rate limit exceeded");
       }
+      
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error:", errorData);
+      
+      if (response.status === 401) {
+        throw new Error("API authentication failed - please check API key");
+      }
+      
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -37,7 +55,6 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
     const microCaps = data
       .filter((coin: any) => {
         try {
-          // Basic data validation
           if (!coin?.market_cap || !coin?.total_volume || !coin?.current_price) {
             return false;
           }
@@ -47,8 +64,8 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
           
           // Market cap under 100M and above 10k
           const isValidMarketCap = marketCap < 100000000 && marketCap > 10000;
-          // At least $10 daily volume to catch very early opportunities
-          const hasVolume = volume > 10;
+          // At least $100 daily volume
+          const hasVolume = volume > 100;
           
           if (isValidMarketCap && hasVolume) {
             console.log(

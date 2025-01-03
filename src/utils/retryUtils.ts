@@ -1,10 +1,10 @@
-export const withExponentialBackoff = async <T>(
+export const withRetry = async <T>(
   fn: () => Promise<T>,
   options: {
     maxRetries?: number;
     baseDelay?: number;
     maxDelay?: number;
-    onRetry?: (attempt: number, error: any) => void;
+    onRetry?: (attempt: number, error?: any) => void;
   } = {}
 ): Promise<T> => {
   const {
