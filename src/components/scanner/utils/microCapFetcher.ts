@@ -8,7 +8,14 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
   try {
     // First get a complete list of coins with market data
     const response = await fetch(
-      `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_asc&per_page=250&sparkline=false&price_change_percentage=24h`
+      `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_asc&per_page=250&sparkline=false&price_change_percentage=24h`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          // Add demo key for higher rate limits
+          'x-cg-demo-api-key': 'CG-Demo'
+        }
+      }
     );
 
     if (!response.ok) {
@@ -23,14 +30,27 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
       .filter((coin: any) => {
         const marketCap = parseFloat(coin.market_cap);
         const volume = parseFloat(coin.total_volume);
+        const price = parseFloat(coin.current_price);
+        
+        // Basic validation
+        if (!marketCap || !volume || !price) {
+          console.log(`Skipping ${coin.symbol}: Invalid data`);
+          return false;
+        }
         
         // Verify market cap is under 100M and above 10k
-        const isValidMarketCap = !isNaN(marketCap) && marketCap < 100000000 && marketCap > 10000;
-        // Ensure some trading activity
-        const hasVolume = !isNaN(volume) && volume > 1000;
+        const isValidMarketCap = marketCap < 100000000 && marketCap > 10000;
+        // Ensure some trading activity (at least $1000 daily volume)
+        const hasVolume = volume > 1000;
         
-        if (isValidMarketCap) {
-          console.log(`${coin.symbol}: Market Cap $${(marketCap / 1000000).toFixed(2)}M, Volume: $${(volume / 1000000).toFixed(2)}M`);
+        if (isValidMarketCap && hasVolume) {
+          console.log(
+            `Found valid micro-cap: ${coin.symbol.toUpperCase()}`,
+            `\n  Market Cap: $${(marketCap / 1000000).toFixed(2)}M`,
+            `\n  Volume: $${(volume / 1000).toFixed(2)}K`,
+            `\n  Price: $${price.toFixed(6)}`,
+            `\n  24h Change: ${coin.price_change_percentage_24h?.toFixed(2)}%`
+          );
         }
         
         return isValidMarketCap && hasVolume;
@@ -47,13 +67,21 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
         rank: coin.market_cap_rank
       }))
       // Sort by volume/mcap ratio to find most active micro-caps
-      .sort((a: MicroCapCoin, b: MicroCapCoin) => b.volume24h / b.marketCap - a.volume24h / a.marketCap)
+      .sort((a: MicroCapCoin, b: MicroCapCoin) => 
+        (b.volume24h / b.marketCap) - (a.volume24h / a.marketCap)
+      )
       .slice(0, 6);
 
     console.log("Found", microCaps.length, "valid micro-cap coins");
     
     if (microCaps.length === 0) {
-      console.log("No micro-caps found - API response:", data.slice(0, 5));
+      console.log("API Response Sample:", 
+        data.slice(0, 5).map((c: any) => ({
+          symbol: c.symbol,
+          marketCap: c.market_cap,
+          volume: c.total_volume
+        }))
+      );
     }
     
     return microCaps;
