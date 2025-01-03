@@ -1,48 +1,68 @@
 import { MicroCapCoin } from "../types/microCap";
+import { withRetry } from "@/utils/retryUtils";
 
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
 
 export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
   console.log("Fetching micro-cap coins...");
   
-  try {
-    // Get coins sorted by market cap ascending to prioritize smaller caps
+  return withRetry(async () => {
     const response = await fetch(
-      `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_asc&per_page=250&sparkline=false&price_change_percentage=24h&x_cg_demo_api_key=CG-Demo`
+      `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_asc&per_page=250&sparkline=false&price_change_percentage=24h&x_cg_demo_api_key=CG-Demo`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      }
     );
 
     if (!response.ok) {
+      if (response.status === 429) {
+        console.error("Rate limit exceeded, retrying...");
+        throw new Error("Rate limit exceeded");
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
     console.log("Retrieved", data.length, "coins from CoinGecko");
 
+    if (!Array.isArray(data)) {
+      console.error("Invalid API response format:", data);
+      throw new Error("Invalid API response format");
+    }
+
     // Filter and map the coins
     const microCaps = data
       .filter((coin: any) => {
-        // Basic data validation
-        if (!coin?.market_cap || !coin?.total_volume || !coin?.current_price) {
+        try {
+          // Basic data validation
+          if (!coin?.market_cap || !coin?.total_volume || !coin?.current_price) {
+            return false;
+          }
+
+          const marketCap = parseFloat(coin.market_cap);
+          const volume = parseFloat(coin.total_volume);
+          
+          // Market cap under 100M and above 10k
+          const isValidMarketCap = marketCap < 100000000 && marketCap > 10000;
+          // At least $10 daily volume to catch very early opportunities
+          const hasVolume = volume > 10;
+          
+          if (isValidMarketCap && hasVolume) {
+            console.log(
+              `Found micro-cap: ${coin.symbol.toUpperCase()}`,
+              `\n  Market Cap: $${(marketCap / 1000000).toFixed(2)}M`,
+              `\n  Volume: $${(volume / 1000).toFixed(2)}K`
+            );
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error(`Error processing coin ${coin?.symbol}:`, error);
           return false;
         }
-
-        const marketCap = parseFloat(coin.market_cap);
-        const volume = parseFloat(coin.total_volume);
-        
-        // Market cap under 100M and above 10k
-        const isValidMarketCap = marketCap < 100000000 && marketCap > 10000;
-        // At least $100 daily volume
-        const hasVolume = volume > 100;
-        
-        if (isValidMarketCap && hasVolume) {
-          console.log(
-            `Found micro-cap: ${coin.symbol.toUpperCase()}`,
-            `\n  Market Cap: $${(marketCap / 1000000).toFixed(2)}M`,
-            `\n  Volume: $${(volume / 1000).toFixed(2)}K`
-          );
-          return true;
-        }
-        return false;
       })
       .map((coin: any) => ({
         id: coin.id,
@@ -73,8 +93,12 @@ export const fetchMicroCapCoins = async (): Promise<MicroCapCoin[]> => {
     }
     
     return microCaps;
-  } catch (error) {
-    console.error("Error fetching micro-cap coins:", error);
-    throw error;
-  }
+  }, {
+    maxRetries: 3,
+    baseDelay: 2000,
+    maxDelay: 10000,
+    onRetry: (attempt: number) => {
+      console.log(`Retry attempt ${attempt} for CoinGecko API...`);
+    }
+  });
 };

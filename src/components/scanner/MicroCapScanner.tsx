@@ -11,16 +11,29 @@ import { MicroCapFooter } from "./components/MicroCapFooter";
 export const MicroCapScanner = () => {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
 
-  const { data: coins, isLoading, error } = useQuery({
+  const { data: coins, isLoading, error, refetch } = useQuery({
     queryKey: ["microCapCoins"],
     queryFn: fetchMicroCapCoins,
     refetchInterval: 60000,
+    retry: 3,
     meta: {
       onError: (error: Error) => {
         console.error("Error fetching micro cap coins:", error);
-        toast.error("Failed to fetch micro-cap data", {
-          description: "Please try again later"
-        });
+        if (error.message.includes("rate limit")) {
+          toast.error("API rate limit reached", {
+            description: "Please wait a moment before trying again",
+            duration: 5000
+          });
+        } else {
+          toast.error("Failed to fetch micro-cap data", {
+            description: "Please try again later",
+            duration: 5000,
+            action: {
+              label: "Retry",
+              onClick: () => refetch()
+            }
+          });
+        }
       }
     }
   });
