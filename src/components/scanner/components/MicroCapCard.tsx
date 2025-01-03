@@ -1,82 +1,63 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { MicroCapCoin } from "../types/microCap";
-import { formatMarketCap, formatPercentage } from "@/utils/formatters";
-import { TrendingUp, Volume2, AlertTriangle } from "lucide-react";
+import { formatNumber } from "@/utils/formatters";
+import { ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
 
 interface MicroCapCardProps {
   coin: MicroCapCoin;
-  isSelected: boolean;
-  onSelect: () => void;
 }
 
-export const MicroCapCard = ({ coin, isSelected, onSelect }: MicroCapCardProps) => {
+export const MicroCapCard = ({ coin }: MicroCapCardProps) => {
+  const formatPrice = (price: number) => {
+    if (price < 0.00001) return price.toExponential(2);
+    if (price < 0.01) return price.toFixed(6);
+    return price.toFixed(4);
+  };
+
   return (
-    <Card 
-      className={`
-        glass-card hover:scale-[1.02] transition-all cursor-pointer
-        ${isSelected ? 'ring-2 ring-primary' : ''}
-      `}
-      onClick={onSelect}
-    >
+    <Card className="glass-card hover:scale-[1.02] transition-transform">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {coin.image && (
-              <img 
-                src={coin.image} 
-                alt={coin.name}
-                className="w-8 h-8 rounded-full"
-              />
-            )}
-            <div className="flex flex-col">
-              <span className="text-lg">{coin.symbol.toUpperCase()}</span>
-              <span className="text-xs text-muted-foreground">{coin.name}</span>
-            </div>
+            <span className="text-xl">{coin.symbol}</span>
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
           </div>
-          <Badge variant="outline">
-            MCap: {formatMarketCap(coin.marketCap)}
+          <Badge variant={coin.priceChange24h >= 0 ? "default" : "destructive"}>
+            {coin.priceChange24h >= 0 ? "+" : ""}{coin.priceChange24h.toFixed(2)}%
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">24h Change</span>
-              <span className={`font-mono ${
-                coin.priceChange24h >= 0 ? 'text-green-500' : 'text-red-500'
-              }`}>
-                {formatPercentage(coin.priceChange24h)}
-              </span>
-            </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Name</span>
+            <span className="font-medium">{coin.name}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-primary" />
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">24h Volume</span>
-              <span className="font-mono">{formatMarketCap(coin.volume24h)}</span>
-            </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Price</span>
+            <span className="font-mono">${formatPrice(coin.price)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Market Cap</span>
+            <span className="font-mono">${formatNumber(coin.marketCap)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Volume 24h</span>
+            <span className="font-mono">${formatNumber(coin.volume24h)}</span>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-border/50">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Volume/MCap</span>
-            <span className="font-mono">
-              {((coin.volume24h / coin.marketCap) * 100).toFixed(2)}%
-            </span>
-          </div>
+        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+          {coin.priceChange24h >= 0 ? (
+            <ArrowUpRight className="w-4 h-4 text-green-500" />
+          ) : (
+            <ArrowDownRight className="w-4 h-4 text-red-500" />
+          )}
+          <span className="text-sm text-muted-foreground">
+            Rank #{coin.rank}
+          </span>
         </div>
-
-        {coin.marketCap > 50000000 && (
-          <div className="flex items-center gap-2 text-yellow-500 text-sm mt-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span>Higher market cap - monitor closely</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
