@@ -12,9 +12,12 @@ interface Message {
 }
 
 const initializeEliza = () => {
+  // elizabot is a function that returns an object with methods
   const eliza = elizabot();
-  const initial = eliza.getInitial();
-  return { eliza, initial };
+  return {
+    eliza,
+    initial: eliza.getInitial()
+  };
 };
 
 export function ElizaTrader() {
@@ -28,7 +31,7 @@ export function ElizaTrader() {
   
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [elizaInstance] = useState(() => elizabot());
+  const [elizaInstance] = useState(initializeEliza);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +43,8 @@ export function ElizaTrader() {
     setIsProcessing(true);
 
     try {
-      // Get Eliza's response
-      const reply = elizaInstance.transform(userMessage);
+      // Get Eliza's response using the instance methods
+      const reply = elizaInstance.eliza.transform(userMessage);
       
       // Enhance the response with crypto-specific context
       let enhancedReply = reply;
