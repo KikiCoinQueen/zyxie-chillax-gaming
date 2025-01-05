@@ -26,7 +26,7 @@ const Index = () => {
           <div className="max-w-[1920px] mx-auto space-y-12 pb-24">
             <Hero />
 
-            <section id="token-analyzer" className="px-4 relative z-10">
+            <section id="micro-cap-scanner" className="px-4 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -34,7 +34,7 @@ const Index = () => {
                 viewport={{ once: true }}
                 className="glass-card rounded-xl overflow-hidden border border-white/10"
               >
-                <TokenAnalyzer />
+                <MicroCapScanner />
               </motion.div>
             </section>
 
