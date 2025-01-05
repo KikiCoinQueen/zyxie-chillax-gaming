@@ -5,6 +5,7 @@ import { MicroCapScanner } from "@/components/scanner/MicroCapScanner";
 import { MemeNameGenerator } from "@/components/generator/MemeNameGenerator";
 import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 import { ElizaTrader } from "@/components/ai/ElizaTrader";
+import { VoiceTrader } from "@/components/ai/VoiceTrader";
 import ArbitrageScanner from "@/components/scanner/ArbitrageScanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
@@ -62,7 +63,7 @@ const Index = () => {
               </motion.div>
             </section>
 
-            <section id="arbitrage-scanner" className="px-4 relative z-10">
+            <section id="voice-trader" className="px-4 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -70,7 +71,7 @@ const Index = () => {
                 viewport={{ once: true }}
                 className="glass-card rounded-xl overflow-hidden border border-white/10"
               >
-                <ArbitrageScanner />
+                <VoiceTrader />
               </motion.div>
             </section>
 
