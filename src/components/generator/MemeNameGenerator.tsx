@@ -28,20 +28,21 @@ export const MemeNameGenerator = () => {
         { device: "webgpu" }
       );
 
+      type ClassifierResult = {
+        label: string;
+        score: number;
+      };
+
       const result = await classifier(`${name} is a new meme coin that will revolutionize the crypto space`);
       
-      // Handle array result
       if (Array.isArray(result)) {
-        const prediction = result[0];
-        if (prediction && typeof prediction === 'object' && 'label' in prediction) {
+        const prediction = result[0] as ClassifierResult;
+        if (prediction?.label) {
           return prediction.label === "POSITIVE" ? 0.8 : 0.3;
         }
-        return 0.5;
-      }
-      
-      // Handle single result
-      if (result && typeof result === 'object' && 'label' in result) {
-        return result.label === "POSITIVE" ? 0.8 : 0.3;
+      } else if (result && typeof result === 'object' && 'label' in result) {
+        const singleResult = result as ClassifierResult;
+        return singleResult.label === "POSITIVE" ? 0.8 : 0.3;
       }
       
       return 0.5; // Default confidence if we can't determine sentiment
