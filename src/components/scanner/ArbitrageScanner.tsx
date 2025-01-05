@@ -1,179 +1,155 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRightLeft, Sparkles, AlertTriangle, RefreshCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { ArrowRightLeft, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { ArbitrageOpportunityCard } from "./components/ArbitrageOpportunityCard";
-import { calculateProfitPotential } from "./utils/arbitrageUtils";
+import { formatMarketCap, formatPercentage } from "@/utils/formatters";
 
 interface ArbitrageOpportunity {
   tokenSymbol: string;
-  dex1: {
-    name: string;
-    price: number;
-  };
-  dex2: {
-    name: string;
-    price: number;
-  };
-  profitPercentage: number;
+  dex1: string;
+  dex2: string;
+  price1: number;
+  price2: number;
+  spread: number;
+  volume24h: number;
   estimatedProfit: number;
-  liquidityScore: number;
-  riskLevel: string;
-  timestamp: number;
 }
 
-export const ArbitrageScanner = () => {
-  const [minProfitThreshold, setMinProfitThreshold] = useState(1.5); // 1.5%
-
+const ArbitrageScanner = () => {
   const { data: opportunities, isLoading, refetch } = useQuery({
     queryKey: ["arbitrageOpportunities"],
     queryFn: async () => {
-      try {
-        // Fetch prices from multiple DEXes
-        const [dex1Response, dex2Response] = await Promise.all([
-          fetch("https://api.dexscreener.com/latest/dex/tokens/SOL"),
-          fetch("https://api.dexscreener.com/latest/dex/tokens/SOL,ETH")
-        ]);
+      const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/SOL");
+      if (!response.ok) throw new Error("Failed to fetch opportunities");
+      const data = await response.json();
+      
+      // Process pairs to find arbitrage opportunities
+      const opportunities: ArbitrageOpportunity[] = [];
+      const tokenPairs = new Map();
+      
+      data.pairs?.forEach((pair: any) => {
+        if (!tokenPairs.has(pair.baseToken.symbol)) {
+          tokenPairs.set(pair.baseToken.symbol, []);
+        }
+        tokenPairs.get(pair.baseToken.symbol).push({
+          dex: pair.dexId,
+          price: parseFloat(pair.priceUsd),
+          volume: parseFloat(pair.volume24h)
+        });
+      });
 
-        const [dex1Data, dex2Data] = await Promise.all([
-          dex1Response.json(),
-          dex2Response.json()
-        ]);
-
-        // Process and compare prices
-        const opportunities: ArbitrageOpportunity[] = [];
-        const processedPairs = new Set();
-
-        dex1Data.pairs?.forEach((pair1: any) => {
-          const matchingPair = dex2Data.pairs?.find(
-            (pair2: any) => 
-              pair2.baseToken.symbol.toLowerCase() === pair1.baseToken.symbol.toLowerCase() &&
-              !processedPairs.has(pair1.baseToken.symbol.toLowerCase())
-          );
-
-          if (matchingPair) {
-            const price1 = parseFloat(pair1.priceUsd);
-            const price2 = parseFloat(matchingPair.priceUsd);
-            
-            if (!isNaN(price1) && !isNaN(price2)) {
-              const profitPotential = calculateProfitPotential(price1, price2);
-              
-              if (profitPotential.percentage > minProfitThreshold) {
-                processedPairs.add(pair1.baseToken.symbol.toLowerCase());
-                
+      // Find price differences
+      tokenPairs.forEach((pairs, symbol) => {
+        if (pairs.length >= 2) {
+          for (let i = 0; i < pairs.length; i++) {
+            for (let j = i + 1; j < pairs.length; j++) {
+              const spread = Math.abs(pairs[i].price - pairs[j].price) / Math.min(pairs[i].price, pairs[j].price) * 100;
+              if (spread > 1) { // Only show opportunities with >1% spread
                 opportunities.push({
-                  tokenSymbol: pair1.baseToken.symbol,
-                  dex1: {
-                    name: pair1.dexId,
-                    price: price1
-                  },
-                  dex2: {
-                    name: matchingPair.dexId,
-                    price: price2
-                  },
-                  profitPercentage: profitPotential.percentage,
-                  estimatedProfit: profitPotential.estimatedProfit,
-                  liquidityScore: Math.min(
-                    parseFloat(pair1.liquidity?.usd || "0"),
-                    parseFloat(matchingPair.liquidity?.usd || "0")
-                  ) / 1000000, // Score based on millions in liquidity
-                  riskLevel: profitPotential.percentage > 5 ? "High" : "Medium",
-                  timestamp: Date.now()
+                  tokenSymbol: symbol,
+                  dex1: pairs[i].dex,
+                  dex2: pairs[j].dex,
+                  price1: pairs[i].price,
+                  price2: pairs[j].price,
+                  spread: spread,
+                  volume24h: Math.min(pairs[i].volume, pairs[j].volume),
+                  estimatedProfit: (spread / 100) * Math.min(pairs[i].volume, pairs[j].volume) * 0.95 // 95% success rate
                 });
               }
             }
           }
-        });
+        }
+      });
 
-        return opportunities.sort((a, b) => b.profitPercentage - a.profitPercentage);
-      } catch (error) {
-        console.error("Error fetching arbitrage opportunities:", error);
-        toast.error("Failed to fetch arbitrage data");
-        return [];
-      }
+      return opportunities.sort((a, b) => b.estimatedProfit - a.estimatedProfit).slice(0, 5);
     },
-    refetchInterval: 30000,
-    meta: {
-      onError: () => {
-        toast.error("Failed to fetch arbitrage opportunities");
-      }
-    }
+    refetchInterval: 30000
   });
 
+  const handleTrack = (opportunity: ArbitrageOpportunity) => {
+    toast.success("Tracking opportunity", {
+      description: `Now monitoring ${opportunity.tokenSymbol} price difference between ${opportunity.dex1} and ${opportunity.dex2}`
+    });
+  };
+
   return (
-    <section className="py-20 px-4" id="arbitrage-scanner">
-      <div className="container max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+        <CardTitle className="text-2xl font-bold">Arbitrage Scanner</CardTitle>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => refetch()}
+          className={isLoading ? "animate-spin" : ""}
         >
-          <div className="flex items-center justify-center gap-3 mb-12">
-            <ArrowRightLeft className="w-6 h-6 text-primary animate-pulse" />
-            <h2 className="text-3xl font-display font-bold gradient-text text-center">
-              Real-Time Arbitrage Scanner
-            </h2>
-            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-          </div>
-
-          <Card className="glass-card mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span>Live Opportunities</span>
-                  {isLoading && (
-                    <RefreshCcw className="w-4 h-4 animate-spin" />
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refetch()}
-                  disabled={isLoading}
-                >
-                  Refresh
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center min-h-[200px]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                </div>
-              ) : !opportunities?.length ? (
-                <div className="text-center py-10">
-                  <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                  <p className="text-lg text-muted-foreground">
-                    No profitable opportunities found at the moment
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Keep checking back for new opportunities!
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {opportunities.map((opportunity) => (
-                    <ArbitrageOpportunityCard
-                      key={`${opportunity.tokenSymbol}-${opportunity.timestamp}`}
-                      opportunity={opportunity}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Data updates every 30 seconds • Not financial advice • DYOR</p>
-            <p className="mt-1">
-              Showing opportunities with &gt;{minProfitThreshold}% potential profit
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Progress value={60} className="w-full" />
+            <p className="text-sm text-muted-foreground text-center">
+              Scanning for arbitrage opportunities...
             </p>
           </div>
-        </motion.div>
-      </div>
-    </section>
+        ) : opportunities && opportunities.length > 0 ? (
+          <div className="space-y-4">
+            {opportunities.map((opportunity, index) => (
+              <Card key={index} className="hover-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{opportunity.tokenSymbol}</p>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <span>{opportunity.dex1}</span>
+                        <ArrowRightLeft className="mx-2 h-4 w-4" />
+                        <span>{opportunity.dex2}</span>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => handleTrack(opportunity)}>
+                      Track
+                    </Button>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Spread</p>
+                      <p className="font-medium text-green-500">
+                        {formatPercentage(opportunity.spread)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">24h Volume</p>
+                      <p className="font-medium">
+                        {formatMarketCap(opportunity.volume24h)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Est. Profit</p>
+                      <p className="font-medium text-green-500">
+                        {formatMarketCap(opportunity.estimatedProfit)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <AlertTriangle className="h-8 w-8 text-yellow-500 mb-4" />
+            <p className="text-sm text-muted-foreground">
+              No significant arbitrage opportunities found at the moment.
+              <br />
+              Keep scanning for new opportunities.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
+
+export default ArbitrageScanner;
