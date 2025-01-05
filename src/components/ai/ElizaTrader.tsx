@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Send, Bot } from "lucide-react";
-import { ElizaBot } from "elizabot";
+import elizabot from "elizabot";
 
 interface Message {
   role: "user" | "assistant";
@@ -12,7 +12,7 @@ interface Message {
 }
 
 const initializeEliza = () => {
-  const eliza = new ElizaBot();
+  const eliza = elizabot();
   const initial = eliza.getInitial();
   return { eliza, initial };
 };
@@ -28,7 +28,7 @@ export function ElizaTrader() {
   
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [elizaInstance] = useState(() => new ElizaBot());
+  const [elizaInstance] = useState(() => elizabot());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

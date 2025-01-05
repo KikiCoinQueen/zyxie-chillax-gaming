@@ -29,7 +29,11 @@ export const MemeNameGenerator = () => {
       );
 
       const result = await classifier(`${name} is a new meme coin that will revolutionize the crypto space`);
-      return Array.isArray(result) ? result[0].score : result.score;
+      // Handle both array and single result cases
+      if (Array.isArray(result)) {
+        return result[0]?.label === "POSITIVE" ? 0.8 : 0.3;
+      }
+      return result?.label === "POSITIVE" ? 0.8 : 0.3;
     } catch (error) {
       console.error("Error classifying name:", error);
       return Math.random() * 0.5 + 0.5; // Fallback confidence score
