@@ -52,6 +52,18 @@ const Index = () => {
 
             <Separator className="opacity-10" />
 
+            <section id="name-generator" className="px-4 relative z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="glass-card rounded-xl overflow-hidden border border-white/10"
+              >
+                <MemeNameGenerator />
+              </motion.div>
+            </section>
+
             <section id="ai-analysis" className="px-4 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -89,20 +101,6 @@ const Index = () => {
                 className="glass-card rounded-xl overflow-hidden border border-white/10"
               >
                 <MicroCapScanner />
-              </motion.div>
-            </section>
-
-            <Separator className="opacity-10" />
-
-            <section id="name-generator" className="px-4 relative z-10">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10"
-              >
-                <MemeNameGenerator />
               </motion.div>
             </section>
 
