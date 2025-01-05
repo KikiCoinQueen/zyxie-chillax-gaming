@@ -1,6 +1,19 @@
 import { pipeline } from "@huggingface/transformers";
 import { toast } from "sonner";
-import { AnalysisResult, TextClassificationOutput, extractSentiment } from "@/components/ai/analysis/types";
+
+export interface AnalysisResult {
+  symbol: string;
+  sentiment: number;
+  riskScore: number;
+  socialScore: number;
+  prediction: string;
+  confidence: number;
+}
+
+export interface TextClassificationOutput {
+  label: string;
+  score: number;
+}
 
 let classifier: any = null;
 
@@ -28,16 +41,20 @@ export const analyzeToken = async (token: string): Promise<AnalysisResult> => {
       }
     }
 
-    const result = await classifier(token) as TextClassificationOutput;
-    const sentiment = extractSentiment(result);
+    const result = await classifier(token) as TextClassificationOutput[];
+    const sentiment = result[0].score;
+
+    // Generate pseudo-random but consistent scores based on the token string
+    const hash = token.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const normalizedHash = (hash % 100) / 100;
 
     return {
       symbol: token,
-      sentiment: sentiment.score * 100,
-      riskScore: Math.random() * 5,
-      socialScore: Math.random() * 5,
-      prediction: sentiment.score > 0.6 ? "Bullish 🚀" : "Bearish 🐻",
-      confidence: sentiment.score * 100
+      sentiment: sentiment * 100,
+      riskScore: 2.5 + (normalizedHash * 2.5), // Scale from 2.5 to 5
+      socialScore: 1 + (normalizedHash * 4), // Scale from 1 to 5
+      prediction: sentiment > 0.6 ? "Bullish 🚀" : "Bearish 🐻",
+      confidence: sentiment * 100
     };
   } catch (error) {
     console.error(`Error analyzing token ${token}:`, error);
