@@ -12,8 +12,8 @@ interface Message {
 }
 
 const initializeEliza = () => {
-  // elizabot is a function that returns an object with methods
-  const eliza = elizabot();
+  // elizabot needs to be instantiated with 'new'
+  const eliza = new elizabot();
   return {
     eliza,
     initial: eliza.getInitial()
@@ -120,4 +120,4 @@ export function ElizaTrader() {
       </CardFooter>
     </Card>
   );
-}
+};
