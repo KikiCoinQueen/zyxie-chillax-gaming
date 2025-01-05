@@ -3,6 +3,7 @@ import { TokenDiscovery } from "@/components/discovery/TokenDiscovery";
 import { TrendingCoins } from "@/components/trending/TrendingCoins";
 import { MicroCapScanner } from "@/components/scanner/MicroCapScanner";
 import { MemeNameGenerator } from "@/components/generator/MemeNameGenerator";
+import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { motion } from "framer-motion";
@@ -46,6 +47,20 @@ const Index = () => {
                 className="glass-card rounded-xl overflow-hidden border border-white/10"
               >
                 <MicroCapScanner />
+              </motion.div>
+            </section>
+
+            <Separator className="opacity-10" />
+
+            <section id="ai-analysis" className="px-4 relative z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="glass-card rounded-xl overflow-hidden border border-white/10"
+              >
+                <TokenAnalyzer />
               </motion.div>
             </section>
 

@@ -1,5 +1,3 @@
-import { pipeline } from "@huggingface/transformers";
-
 export interface TokenAnalysis {
   symbol: string;
   riskScore: number;
@@ -18,7 +16,8 @@ export interface ClassificationResult {
 }
 
 export const initializeClassifier = async () => {
-  return await pipeline(
+  const { pipeline } = await import("@huggingface/transformers");
+  return pipeline(
     "text-classification",
     "onnx-community/distilbert-base-uncased-finetuned-sst-2-english",
     { device: "webgpu" }
@@ -26,40 +25,59 @@ export const initializeClassifier = async () => {
 };
 
 export const calculateRiskScore = (token: any): number => {
-  const volumeScore = Math.min(parseFloat(token.volume24h) / 100000, 5);
-  const volatilityScore = Math.min(Math.abs(token.priceChange24h) / 20, 5);
-  const liquidityScore = Math.min(token.liquidity?.usd / 50000, 5) || 0;
+  const volume = parseFloat(token.volume24h);
+  const priceChange = Math.abs(token.priceChange24h);
+  const fdv = parseFloat(token.fdv);
   
-  // Enhanced risk calculation with weighted factors
-  const volumeWeight = 0.3;
-  const volatilityWeight = 0.4;
-  const liquidityWeight = 0.3;
+  let score = 0;
   
-  return (
-    (volumeScore * volumeWeight) +
-    (volatilityScore * volatilityWeight) +
-    (liquidityScore * liquidityWeight)
-  );
+  // Volume analysis (0-3 points)
+  if (volume > 100000) score += 3;
+  else if (volume > 50000) score += 2;
+  else if (volume > 10000) score += 1;
+  
+  // Price volatility (0-3 points)
+  if (priceChange > 50) score += 3;
+  else if (priceChange > 20) score += 2;
+  else if (priceChange > 10) score += 1;
+  
+  // Market cap analysis (0-4 points)
+  if (fdv < 1000000) score += 4;
+  else if (fdv < 5000000) score += 3;
+  else if (fdv < 10000000) score += 2;
+  else if (fdv < 50000000) score += 1;
+  
+  return score;
 };
 
 export const calculateMomentum = (token: any): number => {
   const priceChange = token.priceChange24h;
   const volume = parseFloat(token.volume24h);
-  const volumeScore = Math.min(volume / 1000000, 5);
-  const priceScore = Math.min(Math.abs(priceChange) / 20, 5);
-  
-  // Enhanced momentum calculation with trend consideration
-  const trendMultiplier = priceChange > 0 ? 1.2 : 0.8;
-  return Math.min((priceScore * volumeScore * trendMultiplier), 5);
+  const baseScore = (priceChange + 100) / 200; // Normalize to 0-1
+  const volumeMultiplier = Math.min(volume / 100000, 1); // Cap at 100k volume
+  return baseScore * volumeMultiplier * 100;
 };
 
 export const calculateSocialScore = (token: any): number => {
-  // Enhanced social score with multiple factors
-  const baseScore = Math.random() * 3; // Base random score (0-3)
-  const volumeBonus = Math.min(parseFloat(token.volume24h) / 1000000, 1); // Volume bonus (0-1)
-  const priceBonus = token.priceChange24h > 0 ? 1 : 0; // Price trend bonus
+  // This could be enhanced with real social media data
+  const volume = parseFloat(token.volume24h);
+  const priceChange = Math.abs(token.priceChange24h);
   
-  return Math.min(baseScore + volumeBonus + priceBonus, 5);
+  let score = 0;
+  
+  // Volume-based social interest
+  if (volume > 100000) score += 40;
+  else if (volume > 50000) score += 30;
+  else if (volume > 10000) score += 20;
+  else score += 10;
+  
+  // Price action social interest
+  if (priceChange > 50) score += 60;
+  else if (priceChange > 20) score += 40;
+  else if (priceChange > 10) score += 20;
+  else score += 10;
+  
+  return Math.min(score, 100);
 };
 
 export const generateRecommendation = (
@@ -67,28 +85,13 @@ export const generateRecommendation = (
   sentiment: string,
   momentum: number
 ): string => {
-  // Enhanced recommendation logic with more detailed analysis
-  if (riskScore > 4) {
-    if (sentiment === "POSITIVE" && momentum > 3) {
-      return "Strong momentum with high risk - Consider small position 🚀";
-    }
-    return "High risk detected - Careful analysis required ⚠️";
+  if (riskScore > 8 && sentiment === "POSITIVE" && momentum > 70) {
+    return "Strong Buy 🚀";
+  } else if (riskScore > 6 && sentiment === "POSITIVE" && momentum > 50) {
+    return "Buy 📈";
+  } else if (riskScore < 3 || (sentiment === "NEGATIVE" && momentum < 30)) {
+    return "Sell 📉";
+  } else {
+    return "Hold 🔄";
   }
-  
-  if (momentum > 4) {
-    if (sentiment === "POSITIVE") {
-      return "Strong bullish momentum detected 📈";
-    }
-    return "High volatility - Monitor closely 👀";
-  }
-  
-  if (riskScore < 2 && sentiment === "POSITIVE") {
-    return "Lower risk opportunity - Consider entry 🎯";
-  }
-  
-  if (sentiment === "NEGATIVE") {
-    return "Bearish signals detected - Caution advised 🔻";
-  }
-  
-  return "Neutral market conditions - Monitor trends 📊";
 };
