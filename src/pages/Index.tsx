@@ -5,7 +5,7 @@ import { MicroCapScanner } from "@/components/scanner/MicroCapScanner";
 import { MemeNameGenerator } from "@/components/generator/MemeNameGenerator";
 import { TokenAnalyzer } from "@/components/ai/TokenAnalyzer";
 import { ElizaTrader } from "@/components/ai/ElizaTrader";
-import { ArbitrageScanner } from "@/components/scanner/ArbitrageScanner";
+import ArbitrageScanner from "@/components/scanner/ArbitrageScanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { motion } from "framer-motion";
