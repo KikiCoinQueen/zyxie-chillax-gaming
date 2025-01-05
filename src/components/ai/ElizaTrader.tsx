@@ -14,7 +14,8 @@ interface Message {
 }
 
 const initializeEliza = () => {
-  const eliza = elizabot();
+  // Create a new instance of elizabot
+  const eliza = new elizabot();
   return {
     eliza,
     initial: eliza.getInitial()
