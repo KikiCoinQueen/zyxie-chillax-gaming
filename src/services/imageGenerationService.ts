@@ -1,29 +1,29 @@
-import { RunwareService, GenerateImageParams } from "./runwareService";
-import { toast } from "sonner";
-
-const DEFAULT_PROMPT_SUFFIX = ", anime style, high quality, detailed, beautiful lighting";
-
 export const generateZyxieImage = async (apiKey: string, scene: string): Promise<string | null> => {
   try {
-    const runwareService = new RunwareService(apiKey);
-    
-    const basePrompt = `anime style digital art of Zyxie, a beautiful young woman with long flowing lavender hair and striking violet-blue eyes, wearing modern cyberpunk clothing with glowing accents. She has an effortlessly cool and confident demeanor`;
-    
-    const params: GenerateImageParams = {
-      positivePrompt: `${basePrompt}. ${scene}${DEFAULT_PROMPT_SUFFIX}`,
-      model: "runware:100@1",
-      numberResults: 1,
-      outputFormat: "WEBP",
-      CFGScale: 7,
-      scheduler: "FlowMatchEulerDiscreteScheduler",
-      strength: 0.8
-    };
+    const response = await fetch('https://api.runware.ai/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        prompt: `A cute anime-style mascot character named Zyxie ${scene}, digital art style, vibrant colors, detailed, high quality`,
+        negative_prompt: "nsfw, low quality, blurry",
+        width: 512,
+        height: 512,
+        num_inference_steps: 30,
+        guidance_scale: 7.5
+      })
+    });
 
-    const result = await runwareService.generateImage(params);
-    return result.imageURL;
+    if (!response.ok) {
+      throw new Error('Failed to generate image');
+    }
+
+    const data = await response.json();
+    return data.output[0];
   } catch (error) {
-    console.error("Error generating image:", error);
-    toast.error("Failed to generate image. Please try again.");
+    console.error('Error generating image:', error);
     return null;
   }
 };
