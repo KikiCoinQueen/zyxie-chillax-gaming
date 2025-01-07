@@ -7,17 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { generateZyxieImage } from "@/services/imageGenerationService";
 import { toast } from "sonner";
 
-export const ZyxieGenerator = () => {
+export const CryptoArtGenerator = () => {
   const [apiKey, setApiKey] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   
   const scenes = [
-    "in a futuristic gaming lounge surrounded by multiple screens displaying crypto charts and playing video games",
-    "at a high-tech beach party with holographic displays and virtual assets floating in the air",
-    "in a cozy neon-lit room streaming and chatting with fans about crypto",
-    "exploring a cyberpunk city street at night with glowing advertisements",
-    "relaxing in a zen garden with floating holographic crypto symbols"
+    "a futuristic trading floor with holographic crypto charts and AI traders",
+    "a dystopian crypto mining facility with rows of powerful mining rigs",
+    "a modern crypto exchange headquarters with advanced security systems",
+    "a virtual reality crypto trading space with floating market data",
+    "a blockchain visualization with glowing nodes and connections"
   ];
 
   const handleGenerate = async (scene: string) => {
@@ -39,7 +39,7 @@ export const ZyxieGenerator = () => {
   };
 
   return (
-    <section className="py-20 px-4" id="zyxie-generator">
+    <section className="py-20 px-4" id="crypto-art-generator">
       <div className="container max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -49,13 +49,13 @@ export const ZyxieGenerator = () => {
           <div className="flex items-center justify-center gap-3 mb-12">
             <Wand2 className="w-6 h-6 text-primary animate-pulse" />
             <h2 className="text-3xl font-display font-bold gradient-text text-center">
-              Zyxie Image Generator
+              Crypto Art Generator
             </h2>
           </div>
 
           <Card className="glass-card mb-8">
             <CardHeader>
-              <CardTitle>Generate Zyxie Art</CardTitle>
+              <CardTitle>Generate Crypto Art</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -107,7 +107,7 @@ export const ZyxieGenerator = () => {
             >
               <img
                 src={generatedImage}
-                alt="Generated Zyxie"
+                alt="Generated Crypto Art"
                 className="w-full h-full object-cover"
               />
             </motion.div>
