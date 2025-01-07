@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Wand2 } from "lucide-react";
+import { Wand2, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,16 +8,16 @@ import { generateZyxieImage } from "@/services/imageGenerationService";
 import { toast } from "sonner";
 
 export const CryptoArtGenerator = () => {
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("runwareApiKey") || "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   
   const scenes = [
-    "a futuristic trading floor with holographic crypto charts and AI traders analyzing market patterns, cyberpunk style",
-    "a dystopian crypto mining facility with rows of powerful mining rigs glowing in neon colors",
-    "a modern crypto exchange headquarters with advanced security systems and holographic trading interfaces",
-    "a virtual reality crypto trading space with floating market data and neural network visualizations",
-    "a blockchain visualization with glowing nodes and connections forming a complex network in space"
+    "a futuristic crypto trading floor with holographic market charts and AI traders analyzing patterns in a cyberpunk style, dramatic lighting",
+    "an epic visualization of a blockchain network with glowing nodes and digital connections forming intricate patterns in space",
+    "a high-tech crypto mining facility with rows of powerful mining rigs emanating neon colors in a dystopian setting",
+    "a virtual reality crypto trading environment with floating real-time market data and neural network visualizations",
+    "an ultra-modern cryptocurrency exchange command center with advanced security systems and holographic trading interfaces"
   ];
 
   const handleGenerate = async (scene: string) => {
@@ -26,15 +26,17 @@ export const CryptoArtGenerator = () => {
       return;
     }
 
+    localStorage.setItem("runwareApiKey", apiKey);
     setIsGenerating(true);
+
     try {
       const imageUrl = await generateZyxieImage(apiKey, scene);
       if (imageUrl) {
         setGeneratedImage(imageUrl);
-        toast.success("Image generated successfully!");
+        toast.success("Crypto artwork generated successfully!");
       }
     } catch (error) {
-      toast.error("Failed to generate image. Please try again.");
+      toast.error("Failed to generate artwork. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -49,10 +51,11 @@ export const CryptoArtGenerator = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-center gap-3 mb-12">
-            <Wand2 className="w-6 h-6 text-primary animate-pulse" />
+            <Coins className="w-6 h-6 text-primary animate-pulse" />
             <h2 className="text-3xl font-display font-bold gradient-text text-center">
               Crypto Art Generator
             </h2>
+            <Wand2 className="w-6 h-6 text-primary animate-pulse" />
           </div>
 
           <Card className="glass-card mb-8">
@@ -70,6 +73,7 @@ export const CryptoArtGenerator = () => {
                     placeholder="Enter your Runware API key"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
+                    className="font-mono"
                   />
                   <p className="text-xs text-muted-foreground">
                     Get your API key from{" "}
@@ -89,11 +93,11 @@ export const CryptoArtGenerator = () => {
                     <Button
                       key={index}
                       variant="outline"
-                      className="h-auto py-4 px-6 text-left hover:bg-primary/10 transition-colors duration-300"
+                      className="h-auto py-4 px-6 text-left hover:bg-primary/10 transition-colors duration-300 group"
                       onClick={() => handleGenerate(scene)}
                       disabled={isGenerating}
                     >
-                      <span className="line-clamp-2">{scene}</span>
+                      <span className="line-clamp-2 group-hover:text-primary transition-colors">{scene}</span>
                     </Button>
                   ))}
                 </div>
@@ -105,7 +109,7 @@ export const CryptoArtGenerator = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="aspect-square max-w-2xl mx-auto rounded-xl overflow-hidden shadow-2xl"
+              className="aspect-square max-w-2xl mx-auto rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10"
             >
               <img
                 src={generatedImage}

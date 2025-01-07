@@ -7,8 +7,8 @@ export const generateZyxieImage = async (apiKey: string, scene: string): Promise
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        prompt: `${scene}, cinematic lighting, detailed, high quality, trending on artstation, 8k resolution`,
-        negative_prompt: "nsfw, low quality, blurry, watermark, signature, text",
+        prompt: `${scene}, ultra detailed, 8k resolution, cinematic lighting, trending on artstation, professional digital art`,
+        negative_prompt: "nsfw, low quality, blurry, watermark, signature, text, anime, cartoon",
         width: 1024,
         height: 1024,
         num_inference_steps: 30,
