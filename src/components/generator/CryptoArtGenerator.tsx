@@ -13,11 +13,11 @@ export const CryptoArtGenerator = () => {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   
   const scenes = [
-    "a futuristic trading floor with holographic crypto charts and AI traders",
-    "a dystopian crypto mining facility with rows of powerful mining rigs",
-    "a modern crypto exchange headquarters with advanced security systems",
-    "a virtual reality crypto trading space with floating market data",
-    "a blockchain visualization with glowing nodes and connections"
+    "a futuristic trading floor with holographic crypto charts and AI traders analyzing market patterns, cyberpunk style",
+    "a dystopian crypto mining facility with rows of powerful mining rigs glowing in neon colors",
+    "a modern crypto exchange headquarters with advanced security systems and holographic trading interfaces",
+    "a virtual reality crypto trading space with floating market data and neural network visualizations",
+    "a blockchain visualization with glowing nodes and connections forming a complex network in space"
   ];
 
   const handleGenerate = async (scene: string) => {
@@ -33,6 +33,8 @@ export const CryptoArtGenerator = () => {
         setGeneratedImage(imageUrl);
         toast.success("Image generated successfully!");
       }
+    } catch (error) {
+      toast.error("Failed to generate image. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -87,7 +89,7 @@ export const CryptoArtGenerator = () => {
                     <Button
                       key={index}
                       variant="outline"
-                      className="h-auto py-4 px-6 text-left"
+                      className="h-auto py-4 px-6 text-left hover:bg-primary/10 transition-colors duration-300"
                       onClick={() => handleGenerate(scene)}
                       disabled={isGenerating}
                     >
@@ -103,7 +105,7 @@ export const CryptoArtGenerator = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="aspect-square max-w-2xl mx-auto rounded-xl overflow-hidden"
+              className="aspect-square max-w-2xl mx-auto rounded-xl overflow-hidden shadow-2xl"
             >
               <img
                 src={generatedImage}
