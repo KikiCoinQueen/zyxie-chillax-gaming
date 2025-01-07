@@ -52,7 +52,16 @@
 }
 
 .glass-card {
-  @apply bg-card/30 backdrop-blur-lg border border-white/5 shadow-2xl;
+  @apply bg-card/30 backdrop-blur-lg border border-white/5 shadow-2xl relative overflow-hidden;
+}
+
+.glass-card::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity duration-300;
+}
+
+.glass-card:hover::before {
+  @apply opacity-100;
 }
 
 .neon-glow {
@@ -103,4 +112,64 @@
 .trading-grid {
   @apply grid gap-4 p-4;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+/* Enhanced glass effect */
+.glass-effect {
+  @apply relative overflow-hidden;
+  &::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-300;
+  }
+  &:hover::before {
+    @apply opacity-100;
+  }
+}
+
+/* Crypto-specific animations */
+.pulse-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2);
+  }
+}
+
+/* Enhanced hover effects */
+.hover-lift {
+  @apply transition-all duration-300;
+  &:hover {
+    transform: translateY(-2px);
+    @apply shadow-lg shadow-primary/20;
+  }
+}
+
+/* Crypto price movement animations */
+.price-up {
+  animation: price-up 0.5s ease-out;
+  @apply text-green-500;
+}
+
+.price-down {
+  animation: price-down 0.5s ease-out;
+  @apply text-red-500;
+}
+
+@keyframes price-up {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes price-down {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.9); }
+  100% { transform: scale(1); }
 }
