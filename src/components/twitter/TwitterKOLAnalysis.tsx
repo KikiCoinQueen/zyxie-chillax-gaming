@@ -11,7 +11,11 @@ import { toast } from "sonner";
 import { TweetAnalysis } from "./types";
 import { TweetList } from "./TweetList";
 import { KOLStats } from "./KOLStats";
-import { pipeline } from "@huggingface/transformers";
+import { pipeline, env } from "@huggingface/transformers";
+
+// Configure HuggingFace to use WebGPU when available
+env.useBrowserCache = true;
+env.allowLocalModels = false;
 
 const TwitterKOLAnalysis = () => {
   const [handle, setHandle] = useState("");
@@ -19,16 +23,23 @@ const TwitterKOLAnalysis = () => {
 
   const initializeClassifier = async () => {
     try {
+      console.log("Initializing sentiment classifier...");
       const model = await pipeline(
-        "text-classification",
-        "onnx-community/distilbert-base-uncased-finetuned-sst-2-english",
-        { device: "webgpu" }
+        "sentiment-analysis",
+        "finiteautomata/bertweet-base-sentiment-analysis",
+        { 
+          quantized: true,
+          device: "webgpu"
+        }
       );
+      console.log("Classifier initialized successfully");
       setClassifier(model);
       return model;
     } catch (error) {
       console.error("Failed to initialize classifier:", error);
-      toast.error("Failed to initialize AI model");
+      toast.error("Failed to initialize AI model", {
+        description: "Using basic sentiment analysis fallback"
+      });
       return null;
     }
   };
@@ -42,11 +53,11 @@ const TwitterKOLAnalysis = () => {
         await initializeClassifier();
       }
 
-      // Mock data for demonstration
+      // Enhanced mock data for demonstration
       const mockTweets: TweetAnalysis[] = [
         {
           id: "1",
-          text: "Just found a gem! $PEPE looking bullish with strong community support 🚀",
+          text: "Just found a gem! $PEPE looking bullish with strong community support and increasing volume 🚀",
           timestamp: new Date().toISOString(),
           sentiment: 0.85,
           contracts: ["0x6982508145454ce325ddbe47a25d4ec3d2311933"],
@@ -59,7 +70,7 @@ const TwitterKOLAnalysis = () => {
         },
         {
           id: "2",
-          text: "Be careful with $SCAM, looks like a honeypot. DYOR! ⚠️",
+          text: "Be careful with $SCAM, looks like a honeypot. DYOR! Always check contract verification ⚠️",
           timestamp: new Date().toISOString(),
           sentiment: 0.2,
           contracts: ["0x1234567890abcdef"],
@@ -69,6 +80,19 @@ const TwitterKOLAnalysis = () => {
             retweets: 300,
             replies: 120
           }
+        },
+        {
+          id: "3",
+          text: "New Solana memecoin $BONK showing promising price action. Contract looks clean 📈",
+          timestamp: new Date().toISOString(),
+          sentiment: 0.75,
+          contracts: ["0x9876543210fedcba"],
+          mentions: ["$BONK"],
+          metrics: {
+            likes: 2500,
+            retweets: 890,
+            replies: 234
+          }
         }
       ];
 
@@ -76,16 +100,19 @@ const TwitterKOLAnalysis = () => {
         tweets: mockTweets,
         stats: {
           totalTweets: mockTweets.length,
-          averageSentiment: 0.52,
-          topContracts: ["0x6982508145454ce325ddbe47a25d4ec3d2311933"],
-          topMentions: ["$PEPE"]
+          averageSentiment: mockTweets.reduce((acc, tweet) => acc + tweet.sentiment, 0) / mockTweets.length,
+          topContracts: Array.from(new Set(mockTweets.flatMap(t => t.contracts))),
+          topMentions: Array.from(new Set(mockTweets.flatMap(t => t.mentions)))
         }
       };
     },
     enabled: Boolean(handle),
     meta: {
-      onError: () => {
-        toast.error("Failed to fetch Twitter data");
+      onError: (error: Error) => {
+        console.error("Twitter analysis error:", error);
+        toast.error("Failed to analyze Twitter data", {
+          description: error.message
+        });
       }
     }
   });
@@ -126,7 +153,14 @@ const TwitterKOLAnalysis = () => {
                   }}
                   disabled={isLoading}
                 >
-                  Analyze
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                      Analyzing...
+                    </div>
+                  ) : (
+                    <>Analyze</>
+                  )}
                 </Button>
               </div>
             </CardContent>
