@@ -28,7 +28,6 @@ const TwitterKOLAnalysis = () => {
         "sentiment-analysis",
         "finiteautomata/bertweet-base-sentiment-analysis",
         { 
-          quantized: true,
           device: "webgpu"
         }
       );
@@ -118,12 +117,13 @@ const TwitterKOLAnalysis = () => {
   });
 
   return (
-    <section className="py-20 px-4" id="twitter-analysis">
+    <section className="py-20 px-4 relative z-20" id="twitter-analysis">
       <div className="container max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          className="relative z-30"
         >
           <div className="flex items-center justify-center gap-3 mb-12">
             <Twitter className="w-6 h-6 text-primary animate-pulse" />
@@ -133,14 +133,14 @@ const TwitterKOLAnalysis = () => {
             <TrendingUp className="w-6 h-6 text-primary animate-pulse" />
           </div>
 
-          <Card className="mb-8">
+          <Card className="mb-8 relative z-40">
             <CardContent className="pt-6">
               <div className="flex gap-4">
                 <Input
                   placeholder="Enter Twitter handle (e.g. @cryptoKOL)"
                   value={handle}
                   onChange={(e) => setHandle(e.target.value)}
-                  className="max-w-md"
+                  className="max-w-md relative z-50"
                 />
                 <Button
                   onClick={() => {
@@ -148,10 +148,10 @@ const TwitterKOLAnalysis = () => {
                       toast.error("Please enter a Twitter handle");
                       return;
                     }
-                    // Trigger query refetch
                     window.location.hash = "twitter-analysis";
                   }}
                   disabled={isLoading}
+                  className="relative z-50"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
