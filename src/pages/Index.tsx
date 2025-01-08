@@ -30,6 +30,18 @@ const Index = () => {
           <div className="max-w-[1920px] mx-auto space-y-12 pb-24">
             <Hero />
 
+            <section id="twitter-kol" className="px-4 relative z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+              >
+                <TwitterKOLAnalysis />
+              </motion.div>
+            </section>
+
             <section id="crypto-art" className="px-4 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -145,7 +157,6 @@ const Index = () => {
             </section>
           </div>
 
-          {/* Enhanced animated background elements */}
           <div className="fixed inset-0 pointer-events-none overflow-hidden">
             <div className="absolute -top-1/2 left-0 w-full h-full bg-gradient-to-b from-primary/5 via-transparent to-transparent transform rotate-12 blur-3xl" />
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
