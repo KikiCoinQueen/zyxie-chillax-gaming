@@ -12,6 +12,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
 import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
+import TwitterKOLAnalysis from "@/components/twitter/TwitterKOLAnalysis";
 
 const Index = () => {
   return (
