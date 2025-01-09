@@ -16,13 +16,14 @@ serve(async (req) => {
     const { handle } = await req.json()
     console.log(`Analyzing Twitter handle: ${handle}`)
 
-    // Fetch the Twitter profile page
+    // Use nitter.net as an alternative to Twitter API
     const response = await fetch(`https://nitter.net/${handle}`)
     if (!response.ok) {
-      throw new Error('Failed to fetch Twitter profile')
+      throw new Error(`Failed to fetch Twitter profile: ${response.status}`)
     }
 
     const html = await response.text()
+    console.log("Fetched HTML length:", html.length)
     
     // Extract tweets using basic parsing
     const tweets = html
@@ -33,7 +34,7 @@ serve(async (req) => {
         const tweet = section.substring(0, tweetEnd).trim()
         
         // Basic sentiment analysis
-        const bullishKeywords = ['bull', 'moon', 'pump', 'buy', 'long', 'support', 'break']
+        const bullishKeywords = ['bull', 'moon', 'pump', 'buy', 'long', 'support', 'break', 'up']
         const bearishKeywords = ['bear', 'dump', 'sell', 'short', 'resistance', 'down']
         
         const isBullish = bullishKeywords.some(word => tweet.toLowerCase().includes(word))
@@ -45,7 +46,7 @@ serve(async (req) => {
 
         return {
           text: tweet,
-          sentiment: isBullish ? 1 : isBearish ? -1 : 0,
+          sentiment: isBullish ? 0.8 : isBearish ? 0.2 : 0.5,
           isBullish,
           mentionedCoins
         }
@@ -64,15 +65,27 @@ serve(async (req) => {
           mentionedCoins: [...new Set(tweets.flatMap(t => t.mentionedCoins))]
         }
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        } 
+      }
     )
   } catch (error) {
     console.error('Error analyzing Twitter:', error)
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        errorDetail: error.toString()
+      }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        }
       }
     )
   }
