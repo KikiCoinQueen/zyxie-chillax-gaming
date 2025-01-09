@@ -11,109 +11,62 @@ import { toast } from "sonner";
 import { TweetAnalysis } from "./types";
 import { TweetList } from "./TweetList";
 import { KOLStats } from "./KOLStats";
-import { pipeline, env } from "@huggingface/transformers";
-
-// Configure HuggingFace to use WebGPU when available
-env.useBrowserCache = true;
-env.allowLocalModels = false;
+import { supabase } from "@/integrations/supabase/client";
 
 const TwitterKOLAnalysis = () => {
   const [handle, setHandle] = useState("");
-  const [classifier, setClassifier] = useState<any>(null);
 
-  const initializeClassifier = async () => {
-    try {
-      console.log("Initializing sentiment classifier...");
-      const model = await pipeline(
-        "sentiment-analysis",
-        "finiteautomata/bertweet-base-sentiment-analysis",
-        { 
-          device: "webgpu"
-        }
-      );
-      console.log("Classifier initialized successfully");
-      setClassifier(model);
-      return model;
-    } catch (error) {
-      console.error("Failed to initialize classifier:", error);
-      toast.error("Failed to initialize AI model", {
-        description: "Using basic sentiment analysis fallback"
-      });
-      return null;
-    }
-  };
-
-  const { data: analysis, isLoading } = useQuery({
+  const { data: analysis, isLoading, refetch } = useQuery({
     queryKey: ["twitterAnalysis", handle],
     queryFn: async () => {
       if (!handle) return null;
       
-      if (!classifier) {
-        await initializeClassifier();
-      }
+      try {
+        const { data, error } = await supabase.functions.invoke('analyze-twitter', {
+          body: { handle: handle.replace('@', '') }
+        });
 
-      // Enhanced mock data for demonstration
-      const mockTweets: TweetAnalysis[] = [
-        {
-          id: "1",
-          text: "Just found a gem! $PEPE looking bullish with strong community support and increasing volume 🚀",
-          timestamp: new Date().toISOString(),
-          sentiment: 0.85,
-          contracts: ["0x6982508145454ce325ddbe47a25d4ec3d2311933"],
-          mentions: ["$PEPE"],
-          metrics: {
-            likes: 1200,
-            retweets: 450,
-            replies: 89
-          }
-        },
-        {
-          id: "2",
-          text: "Be careful with $SCAM, looks like a honeypot. DYOR! Always check contract verification ⚠️",
-          timestamp: new Date().toISOString(),
-          sentiment: 0.2,
-          contracts: ["0x1234567890abcdef"],
-          mentions: ["$SCAM"],
-          metrics: {
-            likes: 800,
-            retweets: 300,
-            replies: 120
-          }
-        },
-        {
-          id: "3",
-          text: "New Solana memecoin $BONK showing promising price action. Contract looks clean 📈",
-          timestamp: new Date().toISOString(),
-          sentiment: 0.75,
-          contracts: ["0x9876543210fedcba"],
-          mentions: ["$BONK"],
-          metrics: {
-            likes: 2500,
-            retweets: 890,
-            replies: 234
+        if (error) throw error;
+        
+        // Store analysis in Supabase
+        if (data.success) {
+          const { data: kolData, error: kolError } = await supabase
+            .from('kols')
+            .upsert({
+              twitter_handle: handle,
+              last_analyzed: new Date().toISOString()
+            }, {
+              onConflict: 'twitter_handle'
+            })
+            .select()
+            .single();
+
+          if (!kolError && kolData) {
+            // Store tweet analyses
+            const analysisPromises = data.tweets.map(tweet => 
+              supabase.from('kol_analyses').insert({
+                kol_id: kolData.id,
+                tweet_text: tweet.text,
+                sentiment: tweet.sentiment,
+                is_bullish: tweet.isBullish,
+                mentioned_coins: tweet.mentionedCoins
+              })
+            );
+
+            await Promise.all(analysisPromises);
           }
         }
-      ];
 
-      return {
-        tweets: mockTweets,
-        stats: {
-          totalTweets: mockTweets.length,
-          averageSentiment: mockTweets.reduce((acc, tweet) => acc + tweet.sentiment, 0) / mockTweets.length,
-          topContracts: Array.from(new Set(mockTweets.flatMap(t => t.contracts))),
-          topMentions: Array.from(new Set(mockTweets.flatMap(t => t.mentions)))
-        }
-      };
-    },
-    enabled: Boolean(handle),
-    meta: {
-      onError: (error: Error) => {
+        return data;
+      } catch (error) {
         console.error("Twitter analysis error:", error);
         toast.error("Failed to analyze Twitter data", {
           description: error.message
         });
+        throw error;
       }
-    }
+    },
+    enabled: Boolean(handle),
   });
 
   return (
@@ -148,7 +101,7 @@ const TwitterKOLAnalysis = () => {
                       toast.error("Please enter a Twitter handle");
                       return;
                     }
-                    window.location.hash = "twitter-analysis";
+                    refetch();
                   }}
                   disabled={isLoading}
                   className="relative z-50"
@@ -170,10 +123,51 @@ const TwitterKOLAnalysis = () => {
             <div className="flex justify-center items-center min-h-[400px]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
-          ) : analysis ? (
+          ) : analysis?.success ? (
             <div className="grid gap-6">
-              <KOLStats stats={analysis.stats} />
-              <TweetList tweets={analysis.tweets} />
+              <Card className="p-6">
+                <CardTitle className="mb-4">Analysis Summary</CardTitle>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Total Tweets Analyzed</div>
+                    <div className="text-2xl font-bold">{analysis.summary.totalTweets}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Bullish Signals</div>
+                    <div className="text-2xl font-bold text-green-500">
+                      {analysis.summary.bullishTweets}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Mentioned Coins</div>
+                    <div className="flex flex-wrap gap-2">
+                      {analysis.summary.mentionedCoins.map((coin: string) => (
+                        <Badge key={coin} variant="secondary">{coin}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+              
+              <div className="space-y-4">
+                {analysis.tweets.map((tweet: any, index: number) => (
+                  <Card key={index} className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="text-sm mb-2">{tweet.text}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {tweet.mentionedCoins.map((coin: string) => (
+                            <Badge key={coin} variant="outline">{coin}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Badge variant={tweet.isBullish ? "success" : "secondary"}>
+                        {tweet.isBullish ? "Bullish" : "Neutral"}
+                      </Badge>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
           ) : null}
         </motion.div>

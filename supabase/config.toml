@@ -1,1 +1,2 @@
-project_id = "jmswkirjyslohtefihpn"
+[functions.analyze-twitter]
+verify_jwt = false
