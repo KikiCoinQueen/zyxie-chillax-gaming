@@ -34,23 +34,30 @@ const TwitterKOLAnalysis = () => {
             .from('kols')
             .upsert({
               twitter_handle: handle,
-              last_analyzed: new Date().toISOString()
-            }, {
-              onConflict: 'twitter_handle'
+              last_analyzed: new Date().toISOString(),
+              name: handle
             })
-            .select()
+            .select('*')
             .single();
 
-          if (!kolError && kolData) {
+          if (kolError) {
+            console.error("Error storing KOL:", kolError);
+            throw kolError;
+          }
+
+          if (kolData) {
             // Store tweet analyses
-            const analysisPromises = data.tweets.map(tweet => 
-              supabase.from('kol_analyses').insert({
-                kol_id: kolData.id,
-                tweet_text: tweet.text,
-                sentiment: tweet.sentiment,
-                is_bullish: tweet.isBullish,
-                mentioned_coins: tweet.mentionedCoins
-              })
+            const analysisPromises = data.tweets.map((tweet: any) => 
+              supabase
+                .from('kol_analyses')
+                .insert({
+                  kol_id: kolData.id,
+                  tweet_id: Math.random().toString(36).substring(7), // Temporary ID since we don't have actual tweet IDs
+                  tweet_text: tweet.text,
+                  sentiment: tweet.sentiment,
+                  is_bullish: tweet.isBullish,
+                  mentioned_coins: tweet.mentionedCoins
+                })
             );
 
             await Promise.all(analysisPromises);
@@ -58,7 +65,7 @@ const TwitterKOLAnalysis = () => {
         }
 
         return data;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Twitter analysis error:", error);
         toast.error("Failed to analyze Twitter data", {
           description: error.message
@@ -161,7 +168,7 @@ const TwitterKOLAnalysis = () => {
                           ))}
                         </div>
                       </div>
-                      <Badge variant={tweet.isBullish ? "success" : "secondary"}>
+                      <Badge variant={tweet.isBullish ? "default" : "secondary"} className={tweet.isBullish ? "bg-green-500" : ""}>
                         {tweet.isBullish ? "Bullish" : "Neutral"}
                       </Badge>
                     </div>
