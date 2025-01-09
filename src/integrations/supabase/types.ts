@@ -9,7 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      kol_analyses: {
+        Row: {
+          created_at: string | null
+          id: number
+          is_bullish: boolean | null
+          kol_id: number | null
+          mentioned_coins: string[] | null
+          sentiment: number | null
+          tweet_id: string
+          tweet_text: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          is_bullish?: boolean | null
+          kol_id?: number | null
+          mentioned_coins?: string[] | null
+          sentiment?: number | null
+          tweet_id: string
+          tweet_text: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          is_bullish?: boolean | null
+          kol_id?: number | null
+          mentioned_coins?: string[] | null
+          sentiment?: number | null
+          tweet_id?: string
+          tweet_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kol_analyses_kol_id_fkey"
+            columns: ["kol_id"]
+            isOneToOne: false
+            referencedRelation: "kols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kols: {
+        Row: {
+          created_at: string | null
+          id: number
+          last_analyzed: string | null
+          name: string | null
+          twitter_handle: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          last_analyzed?: string | null
+          name?: string | null
+          twitter_handle: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          last_analyzed?: string | null
+          name?: string | null
+          twitter_handle?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

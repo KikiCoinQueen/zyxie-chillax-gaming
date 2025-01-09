@@ -2,12 +2,12 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Twitter, TrendingUp, AlertTriangle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AnalysisForm } from "./components/AnalysisForm";
+import { AnalysisSummary } from "./components/AnalysisSummary";
+import { TweetList } from "./components/TweetList";
 
 const TwitterKOLAnalysis = () => {
   const [handle, setHandle] = useState("");
@@ -20,7 +20,7 @@ const TwitterKOLAnalysis = () => {
       try {
         console.log("Analyzing handle:", handle);
         const { data, error } = await supabase.functions.invoke('analyze-twitter', {
-          body: { handle: handle.replace('@', '') }
+          body: { handle }
         });
 
         if (error) {
@@ -31,7 +31,7 @@ const TwitterKOLAnalysis = () => {
         if (!data.success) {
           throw new Error(data.error || 'Failed to analyze Twitter data');
         }
-        
+
         // Store analysis in Supabase
         const { data: kolData, error: kolError } = await supabase
           .from('kols')
@@ -80,11 +80,8 @@ const TwitterKOLAnalysis = () => {
     retry: 1
   });
 
-  const handleAnalyze = () => {
-    if (!handle) {
-      toast.error("Please enter a Twitter handle");
-      return;
-    }
+  const handleAnalyze = (newHandle: string) => {
+    setHandle(newHandle);
     refetch();
   };
 
@@ -105,32 +102,7 @@ const TwitterKOLAnalysis = () => {
             <TrendingUp className="w-6 h-6 text-primary animate-pulse" />
           </div>
 
-          <Card className="mb-8 relative z-40">
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <Input
-                  placeholder="Enter Twitter handle (e.g. @cryptoKOL)"
-                  value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
-                  className="max-w-md relative z-50"
-                />
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={isLoading}
-                  className="relative z-50"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                      Analyzing...
-                    </div>
-                  ) : (
-                    <>Analyze</>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AnalysisForm onAnalyze={handleAnalyze} isLoading={isLoading} />
 
           {isLoading ? (
             <div className="flex justify-center items-center min-h-[400px]">
@@ -140,7 +112,7 @@ const TwitterKOLAnalysis = () => {
             <Card className="p-6 border-destructive/50 bg-destructive/10">
               <div className="flex items-center gap-2 text-destructive mb-2">
                 <AlertTriangle className="w-5 h-5" />
-                <CardTitle>Error Analyzing Twitter Data</CardTitle>
+                <h3 className="text-lg font-semibold">Error Analyzing Twitter Data</h3>
               </div>
               <p className="text-sm text-muted-foreground">
                 {error instanceof Error ? error.message : "An unexpected error occurred"}
@@ -148,49 +120,8 @@ const TwitterKOLAnalysis = () => {
             </Card>
           ) : analysis?.success ? (
             <div className="grid gap-6">
-              <Card className="p-6">
-                <CardTitle className="mb-4">Analysis Summary</CardTitle>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Total Tweets Analyzed</div>
-                    <div className="text-2xl font-bold">{analysis.summary.totalTweets}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Bullish Signals</div>
-                    <div className="text-2xl font-bold text-green-500">
-                      {analysis.summary.bullishTweets}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Mentioned Coins</div>
-                    <div className="flex flex-wrap gap-2">
-                      {analysis.summary.mentionedCoins.map((coin: string) => (
-                        <Badge key={coin} variant="secondary">{coin}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-              
-              <div className="space-y-4">
-                {analysis.tweets.map((tweet: any, index: number) => (
-                  <Card key={index} className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="text-sm mb-2">{tweet.text}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {tweet.mentionedCoins.map((coin: string) => (
-                            <Badge key={coin} variant="outline">{coin}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <Badge variant={tweet.isBullish ? "default" : "secondary"} className={tweet.isBullish ? "bg-green-500" : ""}>
-                        {tweet.isBullish ? "Bullish" : "Neutral"}
-                      </Badge>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+              <AnalysisSummary summary={analysis.summary} />
+              <TweetList tweets={analysis.tweets} />
             </div>
           ) : null}
         </motion.div>
