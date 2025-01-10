@@ -51,13 +51,18 @@ serve(async (req) => {
 
         // Extract coin mentions ($BTC, $ETH, etc)
         const coinRegex = /\$[A-Z]+/g;
-        const mentions = tweet.match(coinRegex) || [];
+        const mentions = tweet.match(coinRegex)?.map(m => m.substring(1)) || [];
 
         return {
           id: Math.random().toString(36).substring(7),
           text: tweet,
           sentiment,
-          mentions: mentions.map(m => m.substring(1)) // Remove $ prefix
+          mentions,
+          metrics: {
+            likes: 0,
+            retweets: 0,
+            replies: 0
+          }
         };
       })
       .slice(0, 10); // Get last 10 tweets
@@ -71,10 +76,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         tweets,
-        stats: {
+        summary: {
           totalTweets: tweets.length,
-          averageSentiment: tweets.reduce((acc, t) => acc + t.sentiment, 0) / tweets.length,
-          topMentions: Array.from(new Set(tweets.flatMap(t => t.mentions)))
+          bullishTweets: tweets.filter(t => t.sentiment > 0.6).length,
+          mentionedCoins: Array.from(new Set(tweets.flatMap(t => t.mentions)))
         }
       }),
       { 

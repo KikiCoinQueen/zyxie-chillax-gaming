@@ -4,12 +4,20 @@ export interface TweetMetrics {
   replies: number;
 }
 
-export interface Tweet {
-  id?: string;
+export interface TweetAnalysis {
+  id: string;
   text: string;
   sentiment: number;
-  mentions?: string[];
-  metrics?: TweetMetrics;
+  mentions: string[];
+  contracts: string[];
+  metrics: TweetMetrics;
+}
+
+export interface KOLAnalysisStats {
+  totalTweets: number;
+  averageSentiment: number;
+  topMentions: string[];
+  topContracts: string[];
 }
 
 export interface AnalysisSummary {
@@ -19,6 +27,17 @@ export interface AnalysisSummary {
 }
 
 export interface TwitterAnalysis {
-  tweets: Tweet[];
+  tweets: TweetAnalysis[];
   summary: AnalysisSummary;
+}
+
+export interface Tweet {
+  id: string;
+  text: string;
+  sentiment: number;
+  mentions: string[];
+  contracts: string[];
+  metrics: TweetMetrics;
+  mentionedCoins: string[];
+  isBullish: boolean;
 }

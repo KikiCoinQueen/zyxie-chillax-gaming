@@ -5,10 +5,10 @@ import { Twitter, TrendingUp, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { KOLStats } from "./KOLStats";
+import { TweetList } from "./TweetList";
 import { AnalysisForm } from "./components/AnalysisForm";
-import { AnalysisSummary } from "./components/AnalysisSummary";
-import { TweetList } from "./components/TweetList";
-import type { TwitterAnalysis } from "./types";
+import type { TwitterAnalysis, Tweet, KOLAnalysisStats } from "./types";
 
 const TwitterKOLAnalysis = () => {
   const [handle, setHandle] = useState("");
@@ -33,6 +33,27 @@ const TwitterKOLAnalysis = () => {
           throw new Error('No tweets found for analysis');
         }
 
+        // Transform tweets to match the Tweet interface
+        const transformedTweets: Tweet[] = data.tweets.map(tweet => ({
+          ...tweet,
+          mentionedCoins: tweet.mentions || [],
+          isBullish: tweet.sentiment > 0.6,
+          contracts: tweet.mentions || [], // Using mentions as contracts for now
+          metrics: {
+            likes: 0,
+            retweets: 0,
+            replies: 0
+          }
+        }));
+
+        // Calculate KOL stats
+        const kolStats: KOLAnalysisStats = {
+          totalTweets: transformedTweets.length,
+          averageSentiment: transformedTweets.reduce((acc, t) => acc + t.sentiment, 0) / transformedTweets.length,
+          topMentions: Array.from(new Set(transformedTweets.flatMap(t => t.mentions))).slice(0, 5),
+          topContracts: Array.from(new Set(transformedTweets.flatMap(t => t.contracts))).slice(0, 5)
+        };
+
         // Store KOL data
         const { data: kolData, error: kolError } = await supabase
           .from('kols')
@@ -51,28 +72,24 @@ const TwitterKOLAnalysis = () => {
         }
 
         // Store analyses
-        const analysisPromises = data.tweets.map(tweet => 
+        const analysisPromises = transformedTweets.map(tweet => 
           supabase
             .from('kol_analyses')
             .insert({
               kol_id: kolData.id,
-              tweet_id: tweet.id || Math.random().toString(36).substring(7),
+              tweet_id: tweet.id,
               tweet_text: tweet.text,
               sentiment: tweet.sentiment,
-              is_bullish: tweet.sentiment > 0.6,
-              mentioned_coins: tweet.mentions || []
+              is_bullish: tweet.isBullish,
+              mentioned_coins: tweet.mentionedCoins
             })
         );
 
         await Promise.all(analysisPromises);
         
         return {
-          tweets: data.tweets,
-          summary: {
-            totalTweets: data.tweets.length,
-            bullishTweets: data.tweets.filter(t => t.sentiment > 0.6).length,
-            mentionedCoins: Array.from(new Set(data.tweets.flatMap(t => t.mentions || [])))
-          }
+          tweets: transformedTweets,
+          stats: kolStats
         };
       } catch (error: any) {
         console.error("Twitter analysis error:", error);
@@ -124,7 +141,7 @@ const TwitterKOLAnalysis = () => {
             </Card>
           ) : analysis ? (
             <div className="grid gap-6">
-              <AnalysisSummary summary={analysis.summary} />
+              <KOLStats stats={analysis.stats} />
               <TweetList tweets={analysis.tweets} />
             </div>
           ) : null}
