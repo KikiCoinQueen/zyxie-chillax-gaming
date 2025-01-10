@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,73 +7,72 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { handle } = await req.json();
-    console.log(`Analyzing Twitter handle: ${handle}`);
+    console.log(`Scraping Twitter handle: ${handle}`);
 
-    // Simulate tweet data for development
-    const mockTweets = [
-      {
-        id: "1",
-        text: "Just analyzed $BTC and $ETH charts. Looking bullish! 🚀 Support levels holding strong. #crypto #trading",
-        sentiment: 0.85,
-        mentions: ["BTC", "ETH"],
-        contracts: ["0x2170Ed0880ac9A755fd29B2688956BD959F933F8"],
-        metrics: { likes: 1200, retweets: 300, replies: 150 }
-      },
-      {
-        id: "2",
-        text: "New #DeFi protocol launching on $SOL. Interesting tokenomics and strong team backing. DYOR! 📈",
-        sentiment: 0.75,
-        mentions: ["SOL"],
-        contracts: ["0x41848d32f281383f214c69c7c3e4d2eb6baa8f58"],
-        metrics: { likes: 800, retweets: 200, replies: 100 }
-      },
-      {
-        id: "3",
-        text: "$PEPE showing weakness at resistance. Might need to wait for better entry. #memecoins",
-        sentiment: 0.45,
-        mentions: ["PEPE"],
-        contracts: ["0x6982508145454ce325ddbe47a25d4ec3d2311933"],
-        metrics: { likes: 500, retweets: 150, replies: 75 }
-      },
-      {
-        id: "4",
-        text: "Accumulating more $ARB and $OP at these levels. Layer 2 narrative getting stronger! 💪",
-        sentiment: 0.9,
-        mentions: ["ARB", "OP"],
-        contracts: [
-          "0x912CE59144191C1204E64559FE8253a0e49E6548",
-          "0x4200000000000000000000000000000000000042"
-        ],
-        metrics: { likes: 1500, retweets: 400, replies: 200 }
-      },
-      {
-        id: "5",
-        text: "Market sentiment shifting. Keep an eye on $BTC dominance and altcoin ratios. #cryptotrading",
-        sentiment: 0.6,
-        mentions: ["BTC"],
-        contracts: ["0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"],
-        metrics: { likes: 1000, retweets: 250, replies: 125 }
-      }
-    ];
+    // Launch browser
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
 
-    // Add some randomization to make it feel more dynamic
-    const tweets = mockTweets.map(tweet => ({
-      ...tweet,
-      metrics: {
-        likes: tweet.metrics.likes + Math.floor(Math.random() * 100),
-        retweets: tweet.metrics.retweets + Math.floor(Math.random() * 50),
-        replies: tweet.metrics.replies + Math.floor(Math.random() * 25)
-      }
-    }));
+    // Navigate to Twitter profile
+    await page.goto(`https://twitter.com/${handle}`);
+    await page.waitForTimeout(2000); // Wait for content to load
 
-    console.log(`Generated ${tweets.length} mock tweets for analysis`);
+    // Scrape tweets
+    const tweets = await page.evaluate(() => {
+      const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
+      return Array.from(tweetElements).map((tweet) => {
+        const tweetText = tweet.querySelector('[data-testid="tweetText"]')?.textContent || '';
+        const likes = tweet.querySelector('[data-testid="like"]')?.textContent || '0';
+        const retweets = tweet.querySelector('[data-testid="retweet"]')?.textContent || '0';
+        const replies = tweet.querySelector('[data-testid="reply"]')?.textContent || '0';
+        
+        // Extract crypto mentions using regex
+        const cryptoRegex = /\$([A-Za-z0-9]+)/g;
+        const mentions = [...tweetText.matchAll(cryptoRegex)].map(match => match[1]);
+        
+        // Simple sentiment analysis based on keywords
+        const bullishKeywords = ['bull', 'moon', 'pump', 'long', 'buy', 'support', 'break'];
+        const bearishKeywords = ['bear', 'dump', 'short', 'sell', 'resistance', 'down'];
+        
+        let sentiment = 0.5; // neutral by default
+        const lowerText = tweetText.toLowerCase();
+        
+        bullishKeywords.forEach(word => {
+          if (lowerText.includes(word)) sentiment += 0.1;
+        });
+        
+        bearishKeywords.forEach(word => {
+          if (lowerText.includes(word)) sentiment -= 0.1;
+        });
+        
+        // Clamp sentiment between 0 and 1
+        sentiment = Math.max(0, Math.min(1, sentiment));
+
+        return {
+          id: tweet.getAttribute('data-tweet-id') || crypto.randomUUID(),
+          text: tweetText,
+          sentiment,
+          mentions,
+          contracts: [], // We don't have contract addresses from scraping
+          metrics: {
+            likes: parseInt(likes) || 0,
+            retweets: parseInt(retweets) || 0,
+            replies: parseInt(replies) || 0
+          }
+        };
+      });
+    });
+
+    await browser.close();
+    console.log(`Scraped ${tweets.length} tweets from ${handle}`);
 
     // Store the analysis in Supabase
     try {
@@ -109,7 +108,6 @@ serve(async (req) => {
       await Promise.all(analysisPromises);
     } catch (dbError) {
       console.error("Database error:", dbError);
-      // Continue even if DB storage fails - we still want to return the analysis
     }
 
     return new Response(
