@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AnalysisForm } from "./components/AnalysisForm";
 import { AnalysisSummary } from "./components/AnalysisSummary";
 import { TweetList } from "./components/TweetList";
+import type { TwitterAnalysis } from "./types";
 
 const TwitterKOLAnalysis = () => {
   const [handle, setHandle] = useState("");
@@ -18,21 +19,21 @@ const TwitterKOLAnalysis = () => {
       if (!handle) return null;
       
       try {
-        console.log("Analyzing handle:", handle);
-        const { data, error } = await supabase.functions.invoke('analyze-twitter', {
+        console.log("Analyzing Twitter handle:", handle);
+        const { data, error: functionError } = await supabase.functions.invoke<TwitterAnalysis>('analyze-twitter', {
           body: { handle }
         });
 
-        if (error) {
-          console.error("Supabase function error:", error);
-          throw error;
+        if (functionError) {
+          console.error("Edge function error:", functionError);
+          throw new Error(functionError.message);
         }
 
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to analyze Twitter data');
+        if (!data?.tweets?.length) {
+          throw new Error('No tweets found for analysis');
         }
 
-        // Store analysis in Supabase
+        // Store KOL data
         const { data: kolData, error: kolError } = await supabase
           .from('kols')
           .upsert({
@@ -46,33 +47,36 @@ const TwitterKOLAnalysis = () => {
         if (kolError) {
           console.error("Error storing KOL:", kolError);
           toast.error("Failed to store analysis results");
-          return data;
+          throw kolError;
         }
 
-        // Store tweet analyses
-        if (kolData) {
-          const analysisPromises = data.tweets.map((tweet: any) => 
-            supabase
-              .from('kol_analyses')
-              .insert({
-                kol_id: kolData.id,
-                tweet_id: Math.random().toString(36).substring(7),
-                tweet_text: tweet.text,
-                sentiment: tweet.sentiment,
-                is_bullish: tweet.isBullish,
-                mentioned_coins: tweet.mentionedCoins
-              })
-          );
+        // Store analyses
+        const analysisPromises = data.tweets.map(tweet => 
+          supabase
+            .from('kol_analyses')
+            .insert({
+              kol_id: kolData.id,
+              tweet_id: tweet.id || Math.random().toString(36).substring(7),
+              tweet_text: tweet.text,
+              sentiment: tweet.sentiment,
+              is_bullish: tweet.sentiment > 0.6,
+              mentioned_coins: tweet.mentions || []
+            })
+        );
 
-          await Promise.allSettled(analysisPromises);
-        }
-
-        return data;
+        await Promise.all(analysisPromises);
+        
+        return {
+          tweets: data.tweets,
+          summary: {
+            totalTweets: data.tweets.length,
+            bullishTweets: data.tweets.filter(t => t.sentiment > 0.6).length,
+            mentionedCoins: Array.from(new Set(data.tweets.flatMap(t => t.mentions || [])))
+          }
+        };
       } catch (error: any) {
         console.error("Twitter analysis error:", error);
-        toast.error("Failed to analyze Twitter data", {
-          description: error.message
-        });
+        toast.error(error.message || "Failed to analyze Twitter data");
         throw error;
       }
     },
@@ -118,7 +122,7 @@ const TwitterKOLAnalysis = () => {
                 {error instanceof Error ? error.message : "An unexpected error occurred"}
               </p>
             </Card>
-          ) : analysis?.success ? (
+          ) : analysis ? (
             <div className="grid gap-6">
               <AnalysisSummary summary={analysis.summary} />
               <TweetList tweets={analysis.tweets} />
