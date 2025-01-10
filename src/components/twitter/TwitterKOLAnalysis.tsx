@@ -21,12 +21,12 @@ const TwitterKOLAnalysis = () => {
       try {
         console.log("Analyzing Twitter handle:", handle);
         const { data, error: functionError } = await supabase.functions.invoke<TwitterAnalysis>('analyze-twitter', {
-          body: { handle }
+          body: { handle: handle.replace('@', '') }
         });
 
         if (functionError) {
           console.error("Edge function error:", functionError);
-          throw new Error(functionError.message);
+          throw new Error(functionError.message || "Failed to analyze Twitter data");
         }
 
         if (!data?.tweets?.length) {
@@ -37,13 +37,7 @@ const TwitterKOLAnalysis = () => {
         const transformedTweets: Tweet[] = data.tweets.map(tweet => ({
           ...tweet,
           mentionedCoins: tweet.mentions || [],
-          isBullish: tweet.sentiment > 0.6,
-          contracts: tweet.mentions || [], // Using mentions as contracts for now
-          metrics: {
-            likes: 0,
-            retweets: 0,
-            replies: 0
-          }
+          isBullish: tweet.sentiment > 0.6
         }));
 
         // Calculate KOL stats
@@ -51,42 +45,9 @@ const TwitterKOLAnalysis = () => {
           totalTweets: transformedTweets.length,
           averageSentiment: transformedTweets.reduce((acc, t) => acc + t.sentiment, 0) / transformedTweets.length,
           topMentions: Array.from(new Set(transformedTweets.flatMap(t => t.mentions))).slice(0, 5),
-          topContracts: Array.from(new Set(transformedTweets.flatMap(t => t.contracts))).slice(0, 5)
+          topContracts: Array.from(new Set(transformedTweets.flatMap(t => t.mentions))).slice(0, 5)
         };
 
-        // Store KOL data
-        const { data: kolData, error: kolError } = await supabase
-          .from('kols')
-          .upsert({
-            twitter_handle: handle,
-            last_analyzed: new Date().toISOString(),
-            name: handle
-          })
-          .select()
-          .single();
-
-        if (kolError) {
-          console.error("Error storing KOL:", kolError);
-          toast.error("Failed to store analysis results");
-          throw kolError;
-        }
-
-        // Store analyses
-        const analysisPromises = transformedTweets.map(tweet => 
-          supabase
-            .from('kol_analyses')
-            .insert({
-              kol_id: kolData.id,
-              tweet_id: tweet.id,
-              tweet_text: tweet.text,
-              sentiment: tweet.sentiment,
-              is_bullish: tweet.isBullish,
-              mentioned_coins: tweet.mentionedCoins
-            })
-        );
-
-        await Promise.all(analysisPromises);
-        
         return {
           tweets: transformedTweets,
           stats: kolStats
@@ -102,6 +63,10 @@ const TwitterKOLAnalysis = () => {
   });
 
   const handleAnalyze = (newHandle: string) => {
+    if (!newHandle) {
+      toast.error("Please enter a Twitter handle");
+      return;
+    }
     setHandle(newHandle);
     refetch();
   };
