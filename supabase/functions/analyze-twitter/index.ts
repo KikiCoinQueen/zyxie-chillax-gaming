@@ -16,14 +16,14 @@ serve(async (req) => {
     const { handle } = await req.json();
     console.log(`Analyzing Twitter handle: ${handle}`);
 
-    // Simulate tweet data for development (since we can't reliably scrape Twitter)
-    // This ensures the frontend always gets consistent data to work with
+    // Simulate tweet data for development
     const mockTweets = [
       {
         id: "1",
         text: "Just analyzed $BTC and $ETH charts. Looking bullish! 🚀 Support levels holding strong. #crypto #trading",
         sentiment: 0.85,
         mentions: ["BTC", "ETH"],
+        contracts: ["0x2170Ed0880ac9A755fd29B2688956BD959F933F8"],
         metrics: { likes: 1200, retweets: 300, replies: 150 }
       },
       {
@@ -31,6 +31,7 @@ serve(async (req) => {
         text: "New #DeFi protocol launching on $SOL. Interesting tokenomics and strong team backing. DYOR! 📈",
         sentiment: 0.75,
         mentions: ["SOL"],
+        contracts: ["0x41848d32f281383f214c69c7c3e4d2eb6baa8f58"],
         metrics: { likes: 800, retweets: 200, replies: 100 }
       },
       {
@@ -38,6 +39,7 @@ serve(async (req) => {
         text: "$PEPE showing weakness at resistance. Might need to wait for better entry. #memecoins",
         sentiment: 0.45,
         mentions: ["PEPE"],
+        contracts: ["0x6982508145454ce325ddbe47a25d4ec3d2311933"],
         metrics: { likes: 500, retweets: 150, replies: 75 }
       },
       {
@@ -45,6 +47,10 @@ serve(async (req) => {
         text: "Accumulating more $ARB and $OP at these levels. Layer 2 narrative getting stronger! 💪",
         sentiment: 0.9,
         mentions: ["ARB", "OP"],
+        contracts: [
+          "0x912CE59144191C1204E64559FE8253a0e49E6548",
+          "0x4200000000000000000000000000000000000042"
+        ],
         metrics: { likes: 1500, retweets: 400, replies: 200 }
       },
       {
@@ -52,6 +58,7 @@ serve(async (req) => {
         text: "Market sentiment shifting. Keep an eye on $BTC dominance and altcoin ratios. #cryptotrading",
         sentiment: 0.6,
         mentions: ["BTC"],
+        contracts: ["0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"],
         metrics: { likes: 1000, retweets: 250, replies: 125 }
       }
     ];

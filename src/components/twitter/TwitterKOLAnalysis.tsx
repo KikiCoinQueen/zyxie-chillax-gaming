@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Twitter, TrendingUp, AlertTriangle } from "lucide-react";
+import { Twitter, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +35,12 @@ const TwitterKOLAnalysis = () => {
 
         // Transform tweets to match the Tweet interface
         const transformedTweets: Tweet[] = data.tweets.map(tweet => ({
-          ...tweet,
+          id: tweet.id,
+          text: tweet.text,
+          sentiment: tweet.sentiment,
+          mentions: tweet.mentions || [],
+          contracts: tweet.contracts || [],
+          metrics: tweet.metrics,
           mentionedCoins: tweet.mentions || [],
           isBullish: tweet.sentiment > 0.6
         }));
@@ -45,7 +50,7 @@ const TwitterKOLAnalysis = () => {
           totalTweets: transformedTweets.length,
           averageSentiment: transformedTweets.reduce((acc, t) => acc + t.sentiment, 0) / transformedTweets.length,
           topMentions: Array.from(new Set(transformedTweets.flatMap(t => t.mentions))).slice(0, 5),
-          topContracts: Array.from(new Set(transformedTweets.flatMap(t => t.mentions))).slice(0, 5)
+          topContracts: Array.from(new Set(transformedTweets.flatMap(t => t.contracts || []))).slice(0, 5)
         };
 
         return {
@@ -96,11 +101,10 @@ const TwitterKOLAnalysis = () => {
             </div>
           ) : error ? (
             <Card className="p-6 border-destructive/50 bg-destructive/10">
-              <div className="flex items-center gap-2 text-destructive mb-2">
-                <AlertTriangle className="w-5 h-5" />
+              <div className="flex items-center gap-2 text-destructive">
                 <h3 className="text-lg font-semibold">Error Analyzing Twitter Data</h3>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mt-2">
                 {error instanceof Error ? error.message : "An unexpected error occurred"}
               </p>
             </Card>
