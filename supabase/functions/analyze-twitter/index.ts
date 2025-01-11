@@ -11,115 +11,119 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let browser;
   try {
     const { handle } = await req.json();
-    console.log(`Scraping Twitter handle: ${handle}`);
-
-    // Launch browser with minimal options
-    const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
     
-    try {
-      const page = await browser.newPage();
-      
-      // Set longer timeout and viewport
-      await page.setDefaultNavigationTimeout(30000);
-      await page.setViewport({ width: 1280, height: 800 });
-      
-      // Navigate to Twitter profile
-      await page.goto(`https://twitter.com/${handle}`, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
-      });
-      
-      console.log("Waiting for tweets to load...");
-      await page.waitForSelector('[data-testid="tweet"]', { timeout: 10000 });
-
-      // Scroll to load more tweets
-      for (let i = 0; i < 3; i++) {
-        await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-        await page.waitForTimeout(1000);
-      }
-
-      // Scrape tweets
-      const tweets = await page.evaluate(() => {
-        const tweetElements = document.querySelectorAll('[data-testid="tweet"]');
-        return Array.from(tweetElements, tweet => {
-          const textElement = tweet.querySelector('[data-testid="tweetText"]');
-          const tweetText = textElement ? textElement.textContent : '';
-
-          const likesElement = tweet.querySelector('[data-testid="like"]');
-          const retweetsElement = tweet.querySelector('[data-testid="retweet"]');
-
-          // Extract crypto mentions
-          const cryptoRegex = /\$([A-Za-z0-9]+)/g;
-          const mentions = Array.from(tweetText.matchAll(cryptoRegex), match => match[1]);
-
-          // Enhanced sentiment analysis
-          const bullishKeywords = ['bull', 'moon', 'pump', 'long', 'buy', 'support', 'break', '🚀', '💎', '📈', 'accumulate', 'dip'];
-          const bearishKeywords = ['bear', 'dump', 'short', 'sell', 'resistance', 'down', '📉', 'exit', 'sell'];
-          
-          let sentiment = 0.5;
-          const lowerText = tweetText.toLowerCase();
-          
-          bullishKeywords.forEach(word => {
-            if (lowerText.includes(word)) sentiment += 0.1;
-          });
-          
-          bearishKeywords.forEach(word => {
-            if (lowerText.includes(word)) sentiment -= 0.1;
-          });
-          
-          sentiment = Math.max(0, Math.min(1, sentiment));
-
-          return {
-            text: tweetText,
-            sentiment,
-            mentions,
-            metrics: {
-              likes: parseInt(likesElement?.textContent || '0'),
-              retweets: parseInt(retweetsElement?.textContent || '0')
-            }
-          };
-        });
-      });
-
-      await browser.close();
-      console.log(`Successfully scraped ${tweets.length} tweets`);
-
-      return new Response(
-        JSON.stringify({
-          tweets,
-          summary: {
-            totalTweets: tweets.length,
-            bullishTweets: tweets.filter(t => t.sentiment > 0.6).length,
-            mentionedCoins: Array.from(new Set(tweets.flatMap(t => t.mentions)))
-          }
-        }),
-        { 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-
-    } catch (error) {
-      console.error('Error during scraping:', error);
-      await browser.close();
-      throw error;
+    if (!handle) {
+      throw new Error('No Twitter handle provided');
     }
 
+    console.log(`Analyzing Twitter handle: ${handle}`);
+
+    browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 800 });
+
+    const twitterUrl = `https://twitter.com/${handle}`;
+    console.log(`Navigating to ${twitterUrl}`);
+    
+    await page.goto(twitterUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    
+    // Wait for tweets to load
+    await page.waitForSelector('article[data-testid="tweet"]', { timeout: 10000 });
+    
+    // Scroll to load more tweets
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+      await page.waitForTimeout(1000);
+    }
+
+    // Extract tweets
+    const tweets = await page.evaluate(() => {
+      const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
+      return Array.from(tweetElements, tweet => {
+        const textElement = tweet.querySelector('div[data-testid="tweetText"]');
+        const text = textElement ? textElement.textContent : '';
+        
+        const statsElement = tweet.querySelector('div[role="group"]');
+        const stats = statsElement ? statsElement.textContent : '';
+        
+        const timeElement = tweet.querySelector('time');
+        const timestamp = timeElement ? timeElement.getAttribute('datetime') : '';
+        
+        return {
+          text,
+          stats,
+          timestamp,
+          id: tweet.getAttribute('data-tweet-id') || crypto.randomUUID()
+        };
+      });
+    });
+
+    console.log(`Found ${tweets.length} tweets`);
+
+    // Simple sentiment analysis
+    const analyzedTweets = tweets.map(tweet => {
+      const text = tweet.text.toLowerCase();
+      
+      // Crypto-specific sentiment analysis
+      const bullishTerms = ['bull', 'moon', 'pump', 'buy', 'long', 'support', 'breakout'];
+      const bearishTerms = ['bear', 'dump', 'sell', 'short', 'resistance', 'breakdown'];
+      
+      const bullishCount = bullishTerms.filter(term => text.includes(term)).length;
+      const bearishCount = bearishTerms.filter(term => text.includes(term)).length;
+      
+      const sentiment = (bullishCount - bearishCount) / (bullishCount + bearishCount + 1);
+      
+      // Extract mentioned coins (simple regex for cashtags)
+      const mentions = text.match(/\$[a-zA-Z]+/g) || [];
+      
+      return {
+        ...tweet,
+        sentiment: sentiment + 0.5, // Normalize to 0-1 range
+        mentions: mentions.map(m => m.substring(1).toUpperCase()),
+        is_bullish: sentiment > 0
+      };
+    });
+
+    await browser.close();
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        tweets: analyzedTweets,
+        stats: {
+          total_tweets: analyzedTweets.length,
+          average_sentiment: analyzedTweets.reduce((acc, t) => acc + t.sentiment, 0) / analyzedTweets.length,
+          bullish_tweets: analyzedTweets.filter(t => t.is_bullish).length
+        }
+      }),
+      { 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   } catch (error) {
     console.error('Error analyzing Twitter:', error);
+    
+    if (browser) {
+      await browser.close();
+    }
+
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Failed to analyze Twitter data"
+        error: error.message,
+        success: false
       }),
       { 
         status: 500,
-        headers: { 
+        headers: {
           ...corsHeaders,
           'Content-Type': 'application/json'
         }

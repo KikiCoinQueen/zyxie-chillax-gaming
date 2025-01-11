@@ -1,20 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
-
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const url = new URL(req.url);
-    const endpoint = url.searchParams.get('endpoint');
+    const { endpoint } = await req.json();
     
     if (!endpoint) {
       throw new Error('No endpoint specified');

@@ -118,9 +118,16 @@ export const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
 export const fetchCoinDetails = async (coinId: string): Promise<CoinDetails | null> => {
   try {
     console.log(`Fetching details for coin: ${coinId}`);
-    return await fetchWithRetry<CoinDetails>(
-      `${COINGECKO_BASE_URL}/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false`
-    );
+    const { data, error } = await supabase.functions.invoke('coingecko', {
+      body: { endpoint: `/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false` }
+    });
+
+    if (error) {
+      console.error(`Error fetching details for coin ${coinId}:`, error);
+      return null;
+    }
+
+    return data;
   } catch (error) {
     console.error(`Error fetching details for coin ${coinId}:`, error);
     handleApiError(error, "CoinGecko Coin Details");
@@ -131,9 +138,16 @@ export const fetchCoinDetails = async (coinId: string): Promise<CoinDetails | nu
 export const fetchMarketChart = async (coinId: string): Promise<any> => {
   try {
     console.log(`Fetching market chart for coin: ${coinId}`);
-    return await fetchWithRetry(
-      `${COINGECKO_BASE_URL}/coins/${coinId}/market_chart?vs_currency=usd&days=7`
-    );
+    const { data, error } = await supabase.functions.invoke('coingecko', {
+      body: { endpoint: `/coins/${coinId}/market_chart?vs_currency=usd&days=7` }
+    });
+
+    if (error) {
+      console.error(`Error fetching market chart for coin ${coinId}:`, error);
+      return null;
+    }
+
+    return data;
   } catch (error) {
     console.error(`Error fetching market chart for coin ${coinId}:`, error);
     handleApiError(error, "CoinGecko Market Chart");
