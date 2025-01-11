@@ -2,8 +2,7 @@ import { CoinDetails, CoinGeckoResponse } from "@/types/coin";
 import { TokenData } from "@/types/token";
 import { fetchWithRetry, handleApiError } from "./apiHelpers";
 import { BACKUP_PAIRS } from "./backupData";
-
-const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
+import { supabase } from "@/integrations/supabase/client";
 
 const validateTokenData = (data: any): boolean => {
   if (!data || typeof data !== 'object') {
@@ -23,18 +22,22 @@ export const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
   try {
     console.log("Fetching trending coins from CoinGecko...");
     
-    // First get a list of all coins to check market caps
-    const response = await fetchWithRetry<any>(
-      `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&sparkline=false`
-    );
+    const { data, error } = await supabase.functions.invoke('coingecko', {
+      body: { endpoint: '/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&sparkline=false' }
+    });
 
-    if (!Array.isArray(response)) {
-      console.warn("Invalid response from CoinGecko markets endpoint:", response);
+    if (error) {
+      console.error("Error fetching CoinGecko data:", error);
+      return BACKUP_PAIRS;
+    }
+
+    if (!Array.isArray(data)) {
+      console.warn("Invalid response from CoinGecko markets endpoint:", data);
       return BACKUP_PAIRS;
     }
 
     // Filter for coins under 100M market cap
-    const microCapCoins = response.filter(coin => {
+    const microCapCoins = data.filter(coin => {
       const marketCap = coin.market_cap;
       return marketCap && marketCap < 100000000 && marketCap > 10000;
     });
@@ -45,11 +48,11 @@ export const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
     const detailedCoins = await Promise.all(
       microCapCoins.slice(0, 10).map(async (coin) => {
         try {
-          const details = await fetchWithRetry<any>(
-            `${COINGECKO_BASE_URL}/coins/${coin.id}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true`
-          );
+          const { data: details, error: detailsError } = await supabase.functions.invoke('coingecko', {
+            body: { endpoint: `/coins/${coin.id}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true` }
+          });
 
-          if (!details?.market_data?.current_price?.usd) {
+          if (detailsError || !details?.market_data?.current_price?.usd) {
             console.log(`No price data for ${coin.name}, skipping`);
             return null;
           }
@@ -57,7 +60,6 @@ export const fetchCoinGeckoData = async (): Promise<TokenData[]> => {
           const marketCap = details.market_data.market_cap.usd;
           console.log(`Verified market cap for ${coin.name}: $${marketCap.toLocaleString()}`);
 
-          // Double check market cap is still under 100M
           if (marketCap > 100000000) {
             console.log(`${coin.name} market cap too high: $${marketCap.toLocaleString()}`);
             return null;
