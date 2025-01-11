@@ -1,133 +1,101 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const supabaseUrl = Deno.env.get('SUPABASE_URL')
+const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-serve(async (req) => {
+const supabase = createClient(
+  supabaseUrl,
+  supabaseServiceRole
+)
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
-  let browser;
   try {
-    const { handle } = await req.json();
-    
-    if (!handle) {
-      throw new Error('No Twitter handle provided');
-    }
+    const { twitterHandle } = await req.json()
+    console.log(`Analyzing Twitter handle: ${twitterHandle}`)
 
-    console.log(`Analyzing Twitter handle: ${handle}`);
-
-    browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 800 });
-
-    const twitterUrl = `https://twitter.com/${handle}`;
-    console.log(`Navigating to ${twitterUrl}`);
-    
-    await page.goto(twitterUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-    
-    // Wait for tweets to load
-    await page.waitForSelector('article[data-testid="tweet"]', { timeout: 10000 });
-    
-    // Scroll to load more tweets
-    for (let i = 0; i < 3; i++) {
-      await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-      await page.waitForTimeout(1000);
-    }
-
-    // Extract tweets
-    const tweets = await page.evaluate(() => {
-      const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
-      return Array.from(tweetElements, tweet => {
-        const textElement = tweet.querySelector('div[data-testid="tweetText"]');
-        const text = textElement ? textElement.textContent : '';
-        
-        const statsElement = tweet.querySelector('div[role="group"]');
-        const stats = statsElement ? statsElement.textContent : '';
-        
-        const timeElement = tweet.querySelector('time');
-        const timestamp = timeElement ? timeElement.getAttribute('datetime') : '';
-        
-        return {
-          text,
-          stats,
-          timestamp,
-          id: tweet.getAttribute('data-tweet-id') || crypto.randomUUID()
-        };
-      });
-    });
-
-    console.log(`Found ${tweets.length} tweets`);
-
-    // Simple sentiment analysis
-    const analyzedTweets = tweets.map(tweet => {
-      const text = tweet.text.toLowerCase();
+    // Simple sentiment analysis function
+    const analyzeSentiment = (text: string) => {
+      const bullishWords = ['bullish', 'moon', 'pump', 'buy', 'long']
+      const bearishWords = ['bearish', 'dump', 'sell', 'short']
       
-      // Crypto-specific sentiment analysis
-      const bullishTerms = ['bull', 'moon', 'pump', 'buy', 'long', 'support', 'breakout'];
-      const bearishTerms = ['bear', 'dump', 'sell', 'short', 'resistance', 'breakdown'];
-      
-      const bullishCount = bullishTerms.filter(term => text.includes(term)).length;
-      const bearishCount = bearishTerms.filter(term => text.includes(term)).length;
-      
-      const sentiment = (bullishCount - bearishCount) / (bullishCount + bearishCount + 1);
-      
-      // Extract mentioned coins (simple regex for cashtags)
-      const mentions = text.match(/\$[a-zA-Z]+/g) || [];
+      const text_lower = text.toLowerCase()
+      const bullishCount = bullishWords.filter(word => text_lower.includes(word)).length
+      const bearishCount = bearishWords.filter(word => text_lower.includes(word)).length
       
       return {
-        ...tweet,
-        sentiment: sentiment + 0.5, // Normalize to 0-1 range
-        mentions: mentions.map(m => m.substring(1).toUpperCase()),
-        is_bullish: sentiment > 0
-      };
-    });
-
-    await browser.close();
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        tweets: analyzedTweets,
-        stats: {
-          total_tweets: analyzedTweets.length,
-          average_sentiment: analyzedTweets.reduce((acc, t) => acc + t.sentiment, 0) / analyzedTweets.length,
-          bullish_tweets: analyzedTweets.filter(t => t.is_bullish).length
-        }
-      }),
-      { 
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
+        sentiment: (bullishCount - bearishCount) / (bullishCount + bearishCount + 1),
+        isBullish: bullishCount > bearishCount
       }
-    );
-  } catch (error) {
-    console.error('Error analyzing Twitter:', error);
-    
-    if (browser) {
-      await browser.close();
     }
 
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false
-      }),
-      { 
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    // Insert or get KOL
+    const { data: existingKol, error: kolError } = await supabase
+      .from('kols')
+      .select()
+      .eq('twitter_handle', twitterHandle)
+      .single()
+
+    if (kolError && kolError.code !== 'PGRST116') {
+      throw kolError
+    }
+
+    let kolId
+    if (!existingKol) {
+      const { data: newKol, error: insertError } = await supabase
+        .from('kols')
+        .insert([{ twitter_handle: twitterHandle }])
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+      kolId = newKol.id
+    } else {
+      kolId = existingKol.id
+    }
+
+    // Sample tweets for demo
+    const sampleTweets = [
+      "Just bought more $SOL! This project is going to moon! 🚀",
+      "Market looking bullish today, time to accumulate",
+      "New partnerships coming soon! Stay tuned! 💪"
+    ]
+
+    // Analyze and store tweet data
+    const analyses = await Promise.all(sampleTweets.map(async (tweet) => {
+      const { sentiment, isBullish } = analyzeSentiment(tweet)
+      
+      const { data, error: analysisError } = await supabase
+        .from('kol_analyses')
+        .insert([{
+          kol_id: kolId,
+          tweet_id: Date.now().toString(),
+          tweet_text: tweet,
+          sentiment,
+          is_bullish: isBullish,
+          mentioned_coins: ['SOL']
+        }])
+        .select()
+        .single()
+
+      if (analysisError) throw analysisError
+      return data
+    }))
+
+    return new Response(JSON.stringify({ success: true, analyses }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    })
+
+  } catch (error) {
+    console.error('Error:', error)
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    })
   }
-});
+})

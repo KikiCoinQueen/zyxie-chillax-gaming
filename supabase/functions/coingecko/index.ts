@@ -1,60 +1,40 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from '../_shared/cors.ts'
 
-const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
+const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { endpoint } = await req.json();
-    
-    if (!endpoint) {
-      throw new Error('No endpoint specified');
+    const { endpoint, params } = await req.json()
+    console.log(`Proxying CoinGecko request to: ${endpoint}`)
+
+    const url = new URL(endpoint, COINGECKO_BASE_URL)
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.append(key, value as string)
+      })
     }
 
-    console.log(`Fetching CoinGecko data for endpoint: ${endpoint}`);
-    
-    const response = await fetch(`${COINGECKO_BASE_URL}${endpoint}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await fetch(url.toString())
+    const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`);
+      throw new Error(`CoinGecko API error: ${response.status}`)
     }
 
-    const data = await response.json();
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    })
 
-    return new Response(
-      JSON.stringify(data),
-      { 
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
   } catch (error) {
-    console.error('Error fetching CoinGecko data:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    console.error('Error:', error)
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    })
   }
-});
+})
