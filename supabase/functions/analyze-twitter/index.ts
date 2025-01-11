@@ -1,101 +1,132 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders } from "../_shared/cors.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')
-const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const supabase = createClient(
-  supabaseUrl,
-  supabaseServiceRole
-)
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+interface TwitterAnalysisRequest {
+  handle: string;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { twitterHandle } = await req.json()
-    console.log(`Analyzing Twitter handle: ${twitterHandle}`)
+    const { handle } = await req.json() as TwitterAnalysisRequest;
 
-    // Simple sentiment analysis function
-    const analyzeSentiment = (text: string) => {
-      const bullishWords = ['bullish', 'moon', 'pump', 'buy', 'long']
-      const bearishWords = ['bearish', 'dump', 'sell', 'short']
-      
-      const text_lower = text.toLowerCase()
-      const bullishCount = bullishWords.filter(word => text_lower.includes(word)).length
-      const bearishCount = bearishWords.filter(word => text_lower.includes(word)).length
-      
-      return {
-        sentiment: (bullishCount - bearishCount) / (bullishCount + bearishCount + 1),
-        isBullish: bullishCount > bearishCount
-      }
+    if (!handle) {
+      throw new Error('Twitter handle is required');
     }
 
-    // Insert or get KOL
+    console.log('Analyzing Twitter handle:', handle);
+
+    // First, check if KOL exists or create new one
     const { data: existingKol, error: kolError } = await supabase
       .from('kols')
       .select()
-      .eq('twitter_handle', twitterHandle)
-      .single()
+      .eq('twitter_handle', handle)
+      .single();
 
-    if (kolError && kolError.code !== 'PGRST116') {
-      throw kolError
-    }
+    let kolId;
 
-    let kolId
-    if (!existingKol) {
-      const { data: newKol, error: insertError } = await supabase
+    if (kolError) {
+      // Create new KOL
+      const { data: newKol, error: createError } = await supabase
         .from('kols')
-        .insert([{ twitter_handle: twitterHandle }])
+        .insert([
+          { twitter_handle: handle, name: handle }
+        ])
         .select()
-        .single()
+        .single();
 
-      if (insertError) throw insertError
-      kolId = newKol.id
+      if (createError) {
+        throw createError;
+      }
+
+      kolId = newKol.id;
     } else {
-      kolId = existingKol.id
+      kolId = existingKol.id;
     }
 
-    // Sample tweets for demo
+    // Generate sample tweets analysis
+    // Note: In a real implementation, this would fetch actual tweets from Twitter API
     const sampleTweets = [
-      "Just bought more $SOL! This project is going to moon! 🚀",
-      "Market looking bullish today, time to accumulate",
-      "New partnerships coming soon! Stay tuned! 💪"
-    ]
+      {
+        id: '1',
+        text: `Just analyzed $SOL and $ETH - both looking bullish! 🚀`,
+        sentiment: 0.8,
+        is_bullish: true,
+        mentioned_coins: ['SOL', 'ETH']
+      },
+      {
+        id: '2',
+        text: `Market looking shaky today. $BTC needs to hold support.`,
+        sentiment: 0.4,
+        is_bullish: false,
+        mentioned_coins: ['BTC']
+      }
+    ];
 
-    // Analyze and store tweet data
-    const analyses = await Promise.all(sampleTweets.map(async (tweet) => {
-      const { sentiment, isBullish } = analyzeSentiment(tweet)
-      
-      const { data, error: analysisError } = await supabase
-        .from('kol_analyses')
-        .insert([{
+    // Store analyses in database
+    const { error: analysisError } = await supabase
+      .from('kol_analyses')
+      .insert(
+        sampleTweets.map(tweet => ({
           kol_id: kolId,
-          tweet_id: Date.now().toString(),
-          tweet_text: tweet,
-          sentiment,
-          is_bullish: isBullish,
-          mentioned_coins: ['SOL']
-        }])
-        .select()
-        .single()
+          tweet_id: tweet.id,
+          tweet_text: tweet.text,
+          sentiment: tweet.sentiment,
+          is_bullish: tweet.is_bullish,
+          mentioned_coins: tweet.mentioned_coins
+        }))
+      );
 
-      if (analysisError) throw analysisError
-      return data
-    }))
+    if (analysisError) {
+      throw analysisError;
+    }
 
-    return new Response(JSON.stringify({ success: true, analyses }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+    // Update KOL's last analyzed timestamp
+    await supabase
+      .from('kols')
+      .update({ last_analyzed: new Date().toISOString() })
+      .eq('id', kolId);
+
+    // Fetch all analyses for this KOL
+    const { data: analyses, error: fetchError } = await supabase
+      .from('kol_analyses')
+      .select('*')
+      .eq('kol_id', kolId)
+      .order('created_at', { ascending: false });
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    return new Response(
+      JSON.stringify({
+        kol: { id: kolId, handle },
+        tweets: analyses
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    );
 
   } catch (error) {
-    console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    console.error('Error:', error);
+    return new Response(
+      JSON.stringify({
+        error: error.message
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    );
   }
-})
+});
