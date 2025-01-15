@@ -20,14 +20,14 @@ export const TweetList = ({ tweets }: TweetListProps) => {
     <div className="space-y-4">
       {tweets.map((tweet) => (
         <motion.div
-          key={tweet.id}
+          key={tweet.tweet_id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6">
-              <p className="text-sm mb-4">{tweet.text}</p>
+              <p className="text-sm mb-4">{tweet.tweet_text}</p>
               
               <div className="flex justify-between items-center mb-4">
                 <div className="flex gap-4 text-sm text-muted-foreground">
@@ -50,14 +50,9 @@ export const TweetList = ({ tweets }: TweetListProps) => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {tweet.mentions.map((mention, i) => (
+                {tweet.mentioned_coins.map((mention, i) => (
                   <Badge key={i} variant="secondary">
                     {mention}
-                  </Badge>
-                ))}
-                {tweet.contracts.map((contract, i) => (
-                  <Badge key={i} variant="outline" className="font-mono text-xs">
-                    {`${contract.slice(0, 6)}...${contract.slice(-4)}`}
                   </Badge>
                 ))}
               </div>

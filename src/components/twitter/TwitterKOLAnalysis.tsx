@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { KOLStats } from "./KOLStats";
 import { TweetList } from "./TweetList";
 import { AnalysisForm } from "./components/AnalysisForm";
-import type { TwitterAnalysis, Tweet, KOLAnalysisStats } from "./types";
+import type { TwitterAnalysis, TweetAnalysis, KOLAnalysisStats } from "./types";
 
 const TwitterKOLAnalysis = () => {
   const [handle, setHandle] = useState("");
@@ -20,7 +20,10 @@ const TwitterKOLAnalysis = () => {
       
       try {
         console.log("Analyzing Twitter handle:", handle);
-        const { data, error: functionError } = await supabase.functions.invoke<TwitterAnalysis>('analyze-twitter', {
+        const { data, error: functionError } = await supabase.functions.invoke<{
+          tweets: TweetAnalysis[];
+          kol: { id: string; handle: string };
+        }>('analyze-twitter', {
           body: { handle: handle.replace('@', '') }
         });
 
@@ -33,32 +36,16 @@ const TwitterKOLAnalysis = () => {
           throw new Error('No tweets found for analysis');
         }
 
-        // Transform tweets to match the Tweet interface
-        const transformedTweets: Tweet[] = data.tweets.map(tweet => ({
-          id: tweet.tweet_id,
-          text: tweet.tweet_text,
-          sentiment: tweet.sentiment,
-          mentions: tweet.mentioned_coins || [],
-          contracts: [],
-          metrics: {
-            likes: Math.floor(Math.random() * 1000),
-            retweets: Math.floor(Math.random() * 500),
-            replies: Math.floor(Math.random() * 100)
-          },
-          mentionedCoins: tweet.mentioned_coins || [],
-          isBullish: tweet.is_bullish
-        }));
-
         // Calculate KOL stats
         const kolStats: KOLAnalysisStats = {
-          totalTweets: transformedTweets.length,
-          averageSentiment: transformedTweets.reduce((acc, t) => acc + t.sentiment, 0) / transformedTweets.length,
-          topMentions: Array.from(new Set(transformedTweets.flatMap(t => t.mentions))).slice(0, 5),
+          totalTweets: data.tweets.length,
+          averageSentiment: data.tweets.reduce((acc, t) => acc + t.sentiment, 0) / data.tweets.length,
+          topMentions: Array.from(new Set(data.tweets.flatMap(t => t.mentioned_coins))).slice(0, 5),
           topContracts: []
         };
 
         return {
-          tweets: transformedTweets,
+          tweets: data.tweets,
           stats: kolStats
         };
       } catch (error: any) {
