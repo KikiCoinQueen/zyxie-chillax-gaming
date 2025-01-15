@@ -41,9 +41,47 @@ Deno.serve(async (req) => {
       }
     })
 
+    // Handle different response status codes
+    if (response.status === 404) {
+      console.error('Resource not found:', url.toString())
+      return new Response(
+        JSON.stringify({ 
+          error: 'Resource not found',
+          details: `The requested resource at ${endpoint} was not found`
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404 
+        }
+      )
+    }
+
+    if (response.status === 429) {
+      console.error('Rate limit exceeded')
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          details: 'Too many requests to CoinGecko API'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429 
+        }
+      )
+    }
+
     if (!response.ok) {
       console.error(`CoinGecko API error: ${response.status}`)
-      throw new Error(`CoinGecko API error: ${response.status}`)
+      return new Response(
+        JSON.stringify({ 
+          error: 'API request failed',
+          details: `Failed to fetch data from CoinGecko: ${response.statusText}`
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: response.status 
+        }
+      )
     }
 
     // Ensure we can parse the response as JSON
@@ -53,13 +91,16 @@ Deno.serve(async (req) => {
 
     console.log('CoinGecko response:', JSON.stringify(data).slice(0, 200) + '...')
 
-    return new Response(JSON.stringify(data), {
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'application/json'
-      },
-      status: 200,
-    })
+    return new Response(
+      JSON.stringify(data),
+      {
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        },
+        status: 200,
+      }
+    )
 
   } catch (error) {
     console.error('Error in CoinGecko function:', error)

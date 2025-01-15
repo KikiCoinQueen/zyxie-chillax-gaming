@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { MessageSquare, Repeat2, Heart } from "lucide-react";
 import { TweetAnalysis } from "./types";
 
@@ -14,6 +13,10 @@ export const TweetList = ({ tweets }: TweetListProps) => {
     if (sentiment >= 0.6) return "text-green-500";
     if (sentiment <= 0.4) return "text-red-500";
     return "text-yellow-500";
+  };
+
+  const getMetricValue = (value: number | undefined) => {
+    return value?.toLocaleString() || '0';
   };
 
   return (
@@ -33,15 +36,15 @@ export const TweetList = ({ tweets }: TweetListProps) => {
                 <div className="flex gap-4 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Heart className="w-4 h-4" />
-                    {tweet.metrics.likes.toLocaleString()}
+                    {getMetricValue(tweet.metrics?.likes)}
                   </span>
                   <span className="flex items-center gap-1">
                     <Repeat2 className="w-4 h-4" />
-                    {tweet.metrics.retweets.toLocaleString()}
+                    {getMetricValue(tweet.metrics?.retweets)}
                   </span>
                   <span className="flex items-center gap-1">
                     <MessageSquare className="w-4 h-4" />
-                    {tweet.metrics.replies.toLocaleString()}
+                    {getMetricValue(tweet.metrics?.replies)}
                   </span>
                 </div>
                 <div className={`font-medium ${getSentimentColor(tweet.sentiment)}`}>
@@ -50,7 +53,7 @@ export const TweetList = ({ tweets }: TweetListProps) => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {tweet.mentioned_coins.map((mention, i) => (
+                {tweet.mentioned_coins?.map((mention, i) => (
                   <Badge key={i} variant="secondary">
                     {mention}
                   </Badge>
