@@ -173,3 +173,67 @@
   50% { transform: scale(0.9); }
   100% { transform: scale(1); }
 }
+
+/* New animations */
+.shimmer {
+  @apply relative overflow-hidden;
+  &::after {
+    content: '';
+    @apply absolute inset-0 transform translate-x-[-100%];
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.hover-glow {
+  @apply transition-all duration-300;
+  &:hover {
+    @apply shadow-lg;
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
+  }
+}
+
+.scale-hover {
+  @apply transition-transform duration-300 ease-out;
+  &:hover {
+    transform: scale(1.02);
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .glass-card {
+    @apply mx-2;
+  }
+  
+  .trading-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Performance optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.will-change {
+  will-change: transform, opacity;
+}
+
+.hardware-accelerate {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}

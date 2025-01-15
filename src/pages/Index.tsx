@@ -10,7 +10,7 @@ import ArbitrageScanner from "@/components/scanner/ArbitrageScanner";
 import { CryptoArtGenerator } from "@/components/generator/CryptoArtGenerator";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/navigation/AppSidebar";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import TwitterKOLAnalysis from "@/components/twitter/TwitterKOLAnalysis";
 
@@ -28,141 +28,209 @@ const Index = () => {
         <main className="flex-1 overflow-auto relative">
           <SidebarTrigger className="fixed top-4 left-4 z-50" />
           
-          <div className="max-w-[1920px] mx-auto space-y-12 pb-24">
-            <Hero />
-
-            <section id="twitter-kol" className="px-4 relative z-10">
+          <AnimatePresence>
+            <div className="max-w-[1920px] mx-auto space-y-12 pb-24">
               <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6 }}
+              >
+                <Hero />
+              </motion.div>
+
+              <motion.section 
+                id="twitter-kol" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5 }}
               >
-                <TwitterKOLAnalysis />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <TwitterKOLAnalysis />
+                </div>
+              </motion.section>
 
-            <section id="crypto-art" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="crypto-art" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.1 }}
               >
-                <CryptoArtGenerator />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <CryptoArtGenerator />
+                </div>
+              </motion.section>
 
-            <section id="arbitrage-scanner" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="arbitrage-scanner" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <ArbitrageScanner />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <ArbitrageScanner />
+                </div>
+              </motion.section>
 
-            <section id="micro-cap-scanner" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="micro-cap-scanner" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.3 }}
               >
-                <MicroCapScanner />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <MicroCapScanner />
+                </div>
+              </motion.section>
 
-            <section id="eliza-trader" className="px-4 relative z-10">
-              <motion.div
+              <Separator className="opacity-10" />
+
+              <motion.section 
+                id="eliza-trader" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.4 }}
               >
-                <ElizaTrader />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <ElizaTrader />
+                </div>
+              </motion.section>
 
-            <section id="voice-trader" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="voice-trader" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.5 }}
               >
-                <VoiceTrader />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <VoiceTrader />
+                </div>
+              </motion.section>
 
-            <Separator className="opacity-10" />
+              <Separator className="opacity-10" />
 
-            <section id="name-generator" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="name-generator" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.6 }}
               >
-                <MemeNameGenerator />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <MemeNameGenerator />
+                </div>
+              </motion.section>
 
-            <section id="ai-analysis" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="ai-analysis" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.7 }}
               >
-                <TokenAnalyzer />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <TokenAnalyzer />
+                </div>
+              </motion.section>
 
-            <Separator className="opacity-10" />
+              <Separator className="opacity-10" />
 
-            <section id="trending" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="trending" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.8 }}
               >
-                <TrendingCoins />
-              </motion.div>
-            </section>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <TrendingCoins />
+                </div>
+              </motion.section>
 
-            <Separator className="opacity-10" />
+              <Separator className="opacity-10" />
 
-            <section id="discovery" className="px-4 relative z-10">
-              <motion.div
+              <motion.section 
+                id="discovery" 
+                className="px-4 relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300"
+                transition={{ duration: 0.5, delay: 0.9 }}
               >
-                <TokenDiscovery />
-              </motion.div>
-            </section>
-          </div>
+                <div className="glass-card rounded-xl overflow-hidden border border-white/10 hover:border-primary/20 transition-colors duration-300 transform hover:scale-[1.01]">
+                  <TokenDiscovery />
+                </div>
+              </motion.section>
+            </div>
+          </AnimatePresence>
 
+          {/* Enhanced background elements */}
           <div className="fixed inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-1/2 left-0 w-full h-full bg-gradient-to-b from-primary/5 via-transparent to-transparent transform rotate-12 blur-3xl" />
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-float delay-1000" />
-            <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent/5 rounded-full blur-2xl animate-float delay-500" />
+            <motion.div 
+              className="absolute -top-1/2 left-0 w-full h-full bg-gradient-to-b from-primary/5 via-transparent to-transparent transform rotate-12 blur-3xl"
+              animate={{ 
+                rotate: [12, 15, 12],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            />
+            <motion.div 
+              className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
+              animate={{ 
+                y: [-20, 20, -20],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+            <motion.div 
+              className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl"
+              animate={{ 
+                y: [20, -20, 20],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{
+                duration: 7,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1
+              }}
+            />
+            <motion.div 
+              className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent/5 rounded-full blur-2xl"
+              animate={{ 
+                x: [-20, 20, -20],
+                y: [-20, 20, -20],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5
+              }}
+            />
           </div>
         </main>
       </div>
