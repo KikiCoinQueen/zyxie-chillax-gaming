@@ -22,12 +22,11 @@ Deno.serve(async (req) => {
 
     const { endpoint, params } = requestBody
 
-    // Ensure endpoint starts with a forward slash and remove any trailing slashes
-    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    const cleanEndpoint = normalizedEndpoint.replace(/\/+$/, '')
+    // Clean up the endpoint by removing leading and trailing slashes
+    const cleanEndpoint = endpoint.replace(/^\/+|\/+$/g, '')
 
     // Construct URL with parameters
-    const url = new URL(cleanEndpoint, COINGECKO_BASE_URL)
+    const url = new URL(`${COINGECKO_BASE_URL}/${cleanEndpoint}`)
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -51,7 +50,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Resource not found',
-          details: `The requested resource at ${cleanEndpoint} was not found. Full URL: ${url.toString()}`
+          details: `The requested resource was not found. Full URL: ${url.toString()}`
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
