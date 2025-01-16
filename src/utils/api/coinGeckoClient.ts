@@ -5,7 +5,7 @@ export const fetchCoinGeckoData = async () => {
     console.log("Fetching CoinGecko data...");
     const { data, error } = await supabase.functions.invoke('coingecko', {
       body: {
-        endpoint: '/coins/markets',
+        endpoint: 'coins/markets',
         params: {
           vs_currency: 'usd',
           order: 'market_cap_desc',
@@ -31,7 +31,7 @@ export const fetchCoinDetails = async (coinId: string) => {
     console.log("Fetching coin details for:", coinId);
     const { data, error } = await supabase.functions.invoke('coingecko', {
       body: {
-        endpoint: `/coins/${coinId}`,
+        endpoint: `coins/${coinId}`,
         params: {
           localization: 'false',
           tickers: 'false',
@@ -57,7 +57,7 @@ export const fetchMarketChart = async (coinId: string) => {
     console.log("Fetching market chart for:", coinId);
     const { data, error } = await supabase.functions.invoke('coingecko', {
       body: {
-        endpoint: `/coins/${coinId}/market_chart`,
+        endpoint: `coins/${coinId}/market_chart`,
         params: {
           vs_currency: 'usd',
           days: '7',
