@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const fetchCoinGeckoData = async () => {
   try {
+    console.log("Fetching CoinGecko data...");
     const { data, error } = await supabase.functions.invoke('coingecko', {
       body: {
         endpoint: '/coins/markets',
@@ -14,16 +15,20 @@ export const fetchCoinGeckoData = async () => {
       }
     })
 
-    if (error) throw error
-    return data
+    if (error) {
+      console.error('Error fetching CoinGecko data:', error);
+      throw error;
+    }
+    return data;
   } catch (error) {
-    console.error('Error fetching CoinGecko data:', error)
-    throw error
+    console.error('Error fetching CoinGecko data:', error);
+    throw error;
   }
 }
 
 export const fetchCoinDetails = async (coinId: string) => {
   try {
+    console.log("Fetching coin details for:", coinId);
     const { data, error } = await supabase.functions.invoke('coingecko', {
       body: {
         endpoint: `/coins/${coinId}`,
@@ -36,16 +41,20 @@ export const fetchCoinDetails = async (coinId: string) => {
       }
     })
 
-    if (error) throw error
-    return data
+    if (error) {
+      console.error('Error fetching coin details:', error);
+      throw error;
+    }
+    return data;
   } catch (error) {
-    console.error('Error fetching coin details:', error)
-    throw error
+    console.error('Error fetching coin details:', error);
+    throw error;
   }
 }
 
 export const fetchMarketChart = async (coinId: string) => {
   try {
+    console.log("Fetching market chart for:", coinId);
     const { data, error } = await supabase.functions.invoke('coingecko', {
       body: {
         endpoint: `/coins/${coinId}/market_chart`,
@@ -57,10 +66,13 @@ export const fetchMarketChart = async (coinId: string) => {
       }
     })
 
-    if (error) throw error
-    return data
+    if (error) {
+      console.error('Error fetching market chart:', error);
+      throw error;
+    }
+    return data;
   } catch (error) {
-    console.error('Error fetching market chart:', error)
-    throw error
+    console.error('Error fetching market chart:', error);
+    throw error;
   }
 }
