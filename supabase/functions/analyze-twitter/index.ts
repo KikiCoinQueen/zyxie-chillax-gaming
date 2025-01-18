@@ -8,7 +8,10 @@ interface TwitterAnalysisRequest {
 }
 
 async function scrapeTweets(handle: string) {
-  console.log('Starting tweet scraping for:', handle);
+  // Remove @ if present and clean the handle
+  const cleanHandle = handle.replace('@', '').trim();
+  
+  console.log('Starting tweet scraping for:', cleanHandle);
   const browser = await puppeteer.launch({ 
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
@@ -17,15 +20,17 @@ async function scrapeTweets(handle: string) {
   await page.setViewport({ width: 1280, height: 800 });
   
   try {
-    console.log(`Navigating to https://twitter.com/${handle}`);
-    await page.goto(`https://twitter.com/${handle}`, { 
+    const twitterUrl = `https://twitter.com/${cleanHandle}`;
+    console.log(`Navigating to ${twitterUrl}`);
+    
+    await page.goto(twitterUrl, { 
       waitUntil: 'networkidle0',
-      timeout: 60000 // Increased timeout to 60 seconds
+      timeout: 60000
     });
 
-    // Wait for tweets to load
+    // Wait for tweets to load with a more specific selector
     console.log('Waiting for tweets to load...');
-    await page.waitForSelector('[data-testid="tweet"]', { timeout: 60000 });
+    await page.waitForSelector('article[data-testid="tweet"]', { timeout: 60000 });
 
     // Scroll a bit to load more tweets
     console.log('Scrolling to load more tweets...');
@@ -36,7 +41,7 @@ async function scrapeTweets(handle: string) {
 
     console.log('Extracting tweets...');
     const tweets = await page.evaluate(() => {
-      const tweetElements = document.querySelectorAll('[data-testid="tweet"]');
+      const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
       return Array.from(tweetElements).slice(0, 10).map(tweet => {
         const tweetText = tweet.querySelector('[data-testid="tweetText"]');
         if (!tweetText) return null;
@@ -45,15 +50,19 @@ async function scrapeTweets(handle: string) {
         const text = tweetText.textContent?.trim();
         if (!text) return null;
         
-        // Remove URLs
+        // Remove URLs and clean up whitespace
         return text.replace(/https?:\/\/\S+/g, '')
                   .replace(/\s+/g, ' ')
                   .trim();
       });
     });
 
-    const validTweets = tweets.filter(tweet => tweet && tweet.length > 0);
-    console.log(`Successfully scraped ${validTweets.length} tweets:`, validTweets);
+    const validTweets = tweets.filter(Boolean);
+    console.log(`Successfully scraped ${validTweets.length} tweets`);
+    
+    if (validTweets.length === 0) {
+      throw new Error('No valid tweets found');
+    }
     
     return validTweets;
   } catch (error) {
@@ -66,12 +75,13 @@ async function scrapeTweets(handle: string) {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { handle, scrapeOnly } = await req.json() as TwitterAnalysisRequest;
+    const { handle, scrapeOnly = false } = await req.json() as TwitterAnalysisRequest;
 
     if (!handle) {
       throw new Error('Twitter handle is required');
@@ -79,23 +89,15 @@ Deno.serve(async (req) => {
 
     console.log(`Processing request for handle: ${handle}, scrapeOnly: ${scrapeOnly}`);
     const tweets = await scrapeTweets(handle);
-    
-    if (!tweets.length) {
-      throw new Error('No tweets found');
-    }
 
-    // If scrapeOnly is true, return just the tweets
-    if (scrapeOnly) {
-      return new Response(
-        JSON.stringify({ tweets }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // For now, just return the tweets without AI analysis
     return new Response(
       JSON.stringify({ tweets }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
 
   } catch (error) {
