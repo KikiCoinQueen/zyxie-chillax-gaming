@@ -10,6 +10,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 interface TwitterAnalysisRequest {
   handle: string;
+  scrapeOnly?: boolean;
+  tweets?: string[];
 }
 
 async function scrapeTweets(handle: string) {
@@ -20,7 +22,6 @@ async function scrapeTweets(handle: string) {
   const page = await browser.newPage();
   
   try {
-    // Set a longer timeout and handle modern Twitter
     await page.setDefaultNavigationTimeout(30000);
     console.log(`Navigating to https://twitter.com/${handle}`);
     await page.goto(`https://twitter.com/${handle}`, { 
@@ -28,11 +29,9 @@ async function scrapeTweets(handle: string) {
       timeout: 30000
     });
 
-    // Wait for tweets to load and handle modern Twitter structure
     console.log('Waiting for tweets to load...');
     await page.waitForSelector('[data-testid="tweet"]', { timeout: 30000 });
 
-    // Scroll a bit to load more tweets
     await page.evaluate(() => {
       window.scrollBy(0, 1000);
     });
@@ -42,9 +41,8 @@ async function scrapeTweets(handle: string) {
     const tweets = await page.evaluate(() => {
       const tweetElements = document.querySelectorAll('[data-testid="tweet"]');
       return Array.from(tweetElements).slice(0, 10).map(tweet => {
-        // Handle modern Twitter text structure
         const textElement = tweet.querySelector('[data-testid="tweetText"]') || 
-                          tweet.querySelector('[lang]'); // Backup selector
+                          tweet.querySelector('[lang]');
         return textElement ? textElement.textContent?.trim() : '';
       });
     });
@@ -103,107 +101,70 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { handle } = await req.json() as TwitterAnalysisRequest;
+    const { handle, scrapeOnly, tweets: providedTweets } = await req.json() as TwitterAnalysisRequest;
 
     if (!handle) {
       throw new Error('Twitter handle is required');
     }
 
-    console.log('Analyzing Twitter handle:', handle);
+    // If tweets are provided, only do AI analysis
+    if (providedTweets) {
+      const analysis = await analyzeTweets(providedTweets);
+      
+      // Calculate sentiment based on AI analysis
+      const sentiment = analysis.toLowerCase().includes('bullish') ? 0.8 : 
+                       analysis.toLowerCase().includes('bearish') ? 0.2 : 0.5;
 
-    // First, check if KOL exists or create new one
-    const { data: existingKol, error: kolError } = await supabase
-      .from('kols')
-      .select()
-      .eq('twitter_handle', handle)
-      .single();
+      const analyzedTweets = providedTweets.map((tweet, index) => ({
+        tweet_id: `${Date.now()}-${index}`,
+        tweet_text: tweet,
+        sentiment,
+        is_bullish: sentiment > 0.5,
+        mentioned_coins: (tweet.match(/\$[A-Za-z]+/g) || []).map(coin => coin.substring(1))
+      }));
 
-    let kolId;
-
-    if (kolError) {
-      // Create new KOL
-      const { data: newKol, error: createError } = await supabase
-        .from('kols')
-        .insert([
-          { twitter_handle: handle, name: handle }
-        ])
-        .select()
-        .single();
-
-      if (createError) {
-        throw createError;
-      }
-
-      kolId = newKol.id;
-    } else {
-      kolId = existingKol.id;
+      return new Response(
+        JSON.stringify({ tweets: analyzedTweets }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Scrape and analyze tweets
+    // Otherwise, scrape tweets
     const tweets = await scrapeTweets(handle);
     if (!tweets.length) {
       throw new Error('No tweets found for analysis');
     }
 
-    const analysis = await analyzeTweets(tweets);
-
-    // Calculate overall sentiment based on AI analysis
-    const overallSentiment = analysis.toLowerCase().includes('bullish') ? 0.8 : 
-                            analysis.toLowerCase().includes('bearish') ? 0.2 : 0.5;
-
-    // Store analyses in database
-    const { error: analysisError } = await supabase
-      .from('kol_analyses')
-      .insert(
-        tweets.map((tweet, index) => ({
-          kol_id: kolId,
-          tweet_id: `${Date.now()}-${index}`,
-          tweet_text: tweet,
-          sentiment: overallSentiment,
-          is_bullish: overallSentiment > 0.5,
-          mentioned_coins: (tweet.match(/\$[A-Za-z]+/g) || []).map(coin => coin.substring(1))
-        }))
+    // If scrapeOnly is true, return just the tweets
+    if (scrapeOnly) {
+      return new Response(
+        JSON.stringify({ tweets }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-
-    if (analysisError) {
-      throw analysisError;
     }
 
-    // Update KOL's last analyzed timestamp
-    await supabase
-      .from('kols')
-      .update({ last_analyzed: new Date().toISOString() })
-      .eq('id', kolId);
+    // Otherwise do both scraping and analysis
+    const analysis = await analyzeTweets(tweets);
+    const sentiment = analysis.toLowerCase().includes('bullish') ? 0.8 : 
+                     analysis.toLowerCase().includes('bearish') ? 0.2 : 0.5;
 
-    // Fetch all analyses for this KOL
-    const { data: analyses, error: fetchError } = await supabase
-      .from('kol_analyses')
-      .select('*')
-      .eq('kol_id', kolId)
-      .order('created_at', { ascending: false });
-
-    if (fetchError) {
-      throw fetchError;
-    }
+    const analyzedTweets = tweets.map((tweet, index) => ({
+      tweet_id: `${Date.now()}-${index}`,
+      tweet_text: tweet,
+      sentiment,
+      is_bullish: sentiment > 0.5,
+      mentioned_coins: (tweet.match(/\$[A-Za-z]+/g) || []).map(coin => coin.substring(1))
+    }));
 
     return new Response(
-      JSON.stringify({
-        kol: { id: kolId, handle },
-        tweets: analyses,
-        aiAnalysis: analysis
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      JSON.stringify({ tweets: analyzedTweets }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({
-        error: error.message
-      }),
+      JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500

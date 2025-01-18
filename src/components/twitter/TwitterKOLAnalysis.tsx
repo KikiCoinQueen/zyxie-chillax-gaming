@@ -1,70 +1,27 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
 import { Twitter, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { KOLStats } from "./KOLStats";
 import { TweetList } from "./TweetList";
 import { AnalysisForm } from "./components/AnalysisForm";
-import type { TwitterAnalysis, TweetAnalysis, KOLAnalysisStats } from "./types";
+import { ScrapedTweets } from "./components/ScrapedTweets";
+import type { TweetAnalysis } from "./types";
 
 const TwitterKOLAnalysis = () => {
   const [handle, setHandle] = useState("");
-
-  const { data: analysis, isLoading, error, refetch } = useQuery({
-    queryKey: ["twitterAnalysis", handle],
-    queryFn: async () => {
-      if (!handle) return null;
-      
-      try {
-        console.log("Analyzing Twitter handle:", handle);
-        const { data, error: functionError } = await supabase.functions.invoke<{
-          tweets: TweetAnalysis[];
-          kol: { id: string; handle: string };
-        }>('analyze-twitter', {
-          body: { handle: handle.replace('@', '') }
-        });
-
-        if (functionError) {
-          console.error("Edge function error:", functionError);
-          throw new Error(functionError.message || "Failed to analyze Twitter data");
-        }
-
-        if (!data?.tweets?.length) {
-          throw new Error('No tweets found for analysis');
-        }
-
-        // Calculate KOL stats
-        const kolStats: KOLAnalysisStats = {
-          totalTweets: data.tweets.length,
-          averageSentiment: data.tweets.reduce((acc, t) => acc + t.sentiment, 0) / data.tweets.length,
-          topMentions: Array.from(new Set(data.tweets.flatMap(t => t.mentioned_coins))).slice(0, 5),
-          topContracts: []
-        };
-
-        return {
-          tweets: data.tweets,
-          stats: kolStats
-        };
-      } catch (error: any) {
-        console.error("Twitter analysis error:", error);
-        toast.error(error.message || "Failed to analyze Twitter data");
-        throw error;
-      }
-    },
-    enabled: false,
-    retry: 1
-  });
+  const [analysis, setAnalysis] = useState<TweetAnalysis[] | null>(null);
 
   const handleAnalyze = (newHandle: string) => {
     if (!newHandle) {
-      toast.error("Please enter a Twitter handle");
       return;
     }
     setHandle(newHandle);
-    refetch();
+    setAnalysis(null);
+  };
+
+  const handleAnalysisComplete = (tweets: TweetAnalysis[]) => {
+    setAnalysis(tweets);
   };
 
   return (
@@ -84,27 +41,28 @@ const TwitterKOLAnalysis = () => {
             <TrendingUp className="w-6 h-6 text-primary animate-pulse" />
           </div>
 
-          <AnalysisForm onAnalyze={handleAnalyze} isLoading={isLoading} />
+          <AnalysisForm onAnalyze={handleAnalyze} isLoading={false} />
 
-          {isLoading ? (
-            <div className="flex justify-center items-center min-h-[400px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : error ? (
-            <Card className="p-6 border-destructive/50 bg-destructive/10">
-              <div className="flex items-center gap-2 text-destructive">
-                <h3 className="text-lg font-semibold">Error Analyzing Twitter Data</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                {error instanceof Error ? error.message : "An unexpected error occurred"}
-              </p>
+          {handle && (
+            <Card className="mt-6 p-6">
+              <ScrapedTweets 
+                handle={handle} 
+                onAnalysisComplete={handleAnalysisComplete}
+              />
             </Card>
-          ) : analysis ? (
-            <div className="grid gap-6">
-              <KOLStats stats={analysis.stats} />
-              <TweetList tweets={analysis.tweets} />
+          )}
+
+          {analysis && (
+            <div className="grid gap-6 mt-6">
+              <KOLStats stats={{
+                totalTweets: analysis.length,
+                averageSentiment: analysis.reduce((acc, t) => acc + (t.sentiment || 0), 0) / analysis.length,
+                topMentions: Array.from(new Set(analysis.flatMap(t => t.mentioned_coins || []))).slice(0, 5),
+                topContracts: []
+              }} />
+              <TweetList tweets={analysis} />
             </div>
-          ) : null}
+          )}
         </motion.div>
       </div>
     </section>
