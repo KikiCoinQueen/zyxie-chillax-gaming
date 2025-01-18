@@ -1,13 +1,68 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const openrouterKey = Deno.env.get('OPENROUTER_API_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 interface TwitterAnalysisRequest {
   handle: string;
+}
+
+async function scrapeTweets(handle: string) {
+  console.log('Starting tweet scraping for:', handle);
+  const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+  const page = await browser.newPage();
+  
+  try {
+    await page.goto(`https://twitter.com/${handle}`, { waitUntil: 'networkidle0' });
+    await page.waitForSelector('article[data-testid="tweet"]', { timeout: 5000 });
+
+    const tweets = await page.evaluate(() => {
+      const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
+      return Array.from(tweetElements).slice(0, 10).map(tweet => {
+        const textElement = tweet.querySelector('[data-testid="tweetText"]');
+        return textElement ? textElement.textContent : '';
+      });
+    });
+
+    return tweets.filter(tweet => tweet);
+  } catch (error) {
+    console.error('Error scraping tweets:', error);
+    throw error;
+  } finally {
+    await browser.close();
+  }
+}
+
+async function analyzeTweets(tweets: string[]) {
+  console.log('Analyzing tweets with OpenRouter');
+  const tweetText = tweets.join('\n\n');
+  
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openrouterKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': supabaseUrl,
+    },
+    body: JSON.stringify({
+      model: 'mistralai/mistral-7b-instruct',
+      messages: [{
+        role: 'system',
+        content: 'You are an expert crypto analyst. Analyze these tweets and provide insights about: sentiment, mentioned cryptocurrencies, and overall trading style.'
+      }, {
+        role: 'user',
+        content: `Analyze these tweets and provide a structured analysis:\n\n${tweetText}`
+      }]
+    })
+  });
+
+  const data = await response.json();
+  return data.choices[0].message.content;
 }
 
 Deno.serve(async (req) => {
@@ -52,36 +107,21 @@ Deno.serve(async (req) => {
       kolId = existingKol.id;
     }
 
-    // Generate sample tweets analysis
-    // Note: In a real implementation, this would fetch actual tweets from Twitter API
-    const sampleTweets = [
-      {
-        id: '1',
-        text: `Just analyzed $SOL and $ETH - both looking bullish! 🚀`,
-        sentiment: 0.8,
-        is_bullish: true,
-        mentioned_coins: ['SOL', 'ETH']
-      },
-      {
-        id: '2',
-        text: `Market looking shaky today. $BTC needs to hold support.`,
-        sentiment: 0.4,
-        is_bullish: false,
-        mentioned_coins: ['BTC']
-      }
-    ];
+    // Scrape and analyze tweets
+    const tweets = await scrapeTweets(handle);
+    const analysis = await analyzeTweets(tweets);
 
     // Store analyses in database
     const { error: analysisError } = await supabase
       .from('kol_analyses')
       .insert(
-        sampleTweets.map(tweet => ({
+        tweets.map((tweet, index) => ({
           kol_id: kolId,
-          tweet_id: tweet.id,
-          tweet_text: tweet.text,
-          sentiment: tweet.sentiment,
-          is_bullish: tweet.is_bullish,
-          mentioned_coins: tweet.mentioned_coins
+          tweet_id: `${Date.now()}-${index}`,
+          tweet_text: tweet,
+          sentiment: Math.random(), // This would be replaced with actual sentiment analysis
+          is_bullish: analysis.toLowerCase().includes('bullish'),
+          mentioned_coins: (tweet.match(/\$[A-Za-z]+/g) || []).map(coin => coin.substring(1))
         }))
       );
 
@@ -109,7 +149,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         kol: { id: kolId, handle },
-        tweets: analyses
+        tweets: analyses,
+        aiAnalysis: analysis
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
