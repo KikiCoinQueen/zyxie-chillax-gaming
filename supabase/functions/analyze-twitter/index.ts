@@ -1,5 +1,4 @@
 import { corsHeaders } from "../_shared/cors.ts";
-import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 interface TwitterAnalysisRequest {
   handle: string;
@@ -9,60 +8,35 @@ interface TwitterAnalysisRequest {
 
 async function scrapeTweets(handle: string) {
   const cleanHandle = handle.replace('@', '').trim();
-  
-  console.log('Starting tweet scraping for:', cleanHandle);
-  const browser = await puppeteer.launch({ 
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800 });
-  
-  try {
-    const twitterUrl = `https://twitter.com/${cleanHandle}`;
-    console.log(`Navigating to ${twitterUrl}`);
-    
-    await page.goto(twitterUrl, { 
-      waitUntil: 'networkidle0',
-      timeout: 15000 // Reduced timeout
-    });
+  console.log('Starting tweet fetch for:', cleanHandle);
 
-    // Check if we're on an error page
-    const errorSelector = '[data-testid="error-detail"]';
-    const hasError = await page.$(errorSelector);
-    if (hasError) {
-      const errorText = await page.evaluate(selector => {
-        const element = document.querySelector(selector);
-        return element ? element.textContent : '';
-      }, errorSelector);
-      throw new Error(`Twitter error: ${errorText || 'Account not found or private'}`);
+  try {
+    // Use nitter.net as a Twitter-compatible API
+    const response = await fetch(`https://nitter.net/${cleanHandle}/rss`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch tweets');
     }
 
-    // Wait for tweets to load
-    console.log('Waiting for tweets to load...');
-    await page.waitForSelector('[data-testid="tweet"]', { 
-      timeout: 10000 
-    }).catch(() => {
-      throw new Error('No tweets found - account might be private or not exist');
-    });
+    const text = await response.text();
+    
+    // Extract tweets from RSS feed using regex
+    const tweetMatches = text.match(/<description>(.*?)<\/description>/g) || [];
+    const tweets = tweetMatches
+      .map(match => {
+        const content = match
+          .replace('<description>', '')
+          .replace('</description>', '')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&')
+          .trim();
+        return content;
+      })
+      .filter(tweet => tweet && !tweet.includes('RT @')) // Filter out retweets
+      .slice(0, 10); // Get latest 10 tweets
 
-    // Scroll a bit to load more tweets
-    console.log('Scrolling to load more tweets...');
-    await page.evaluate(() => {
-      window.scrollBy(0, 1000);
-    });
-    await page.waitForTimeout(1000);
-
-    console.log('Extracting tweets...');
-    const tweets = await page.evaluate(() => {
-      const tweetElements = document.querySelectorAll('[data-testid="tweet"]');
-      return Array.from(tweetElements).slice(0, 10).map(tweet => {
-        const tweetText = tweet.querySelector('[data-testid="tweetText"]');
-        return tweetText?.textContent?.trim() || null;
-      }).filter(Boolean);
-    });
-
-    console.log(`Successfully scraped ${tweets.length} tweets`);
+    console.log(`Successfully fetched ${tweets.length} tweets`);
     
     if (tweets.length === 0) {
       throw new Error('No tweets found');
@@ -70,10 +44,8 @@ async function scrapeTweets(handle: string) {
     
     return tweets;
   } catch (error) {
-    console.error('Error during scraping:', error);
+    console.error('Error during tweet fetching:', error);
     throw error;
-  } finally {
-    await browser.close().catch(console.error);
   }
 }
 
@@ -88,9 +60,9 @@ Deno.serve(async (req) => {
 
     if (!handle) {
       return new Response(
-        JSON.stringify({ error: 'Twitter handle is required' }), 
+        JSON.stringify({ error: 'Twitter handle is required', success: false }), 
         { 
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
@@ -110,7 +82,7 @@ Deno.serve(async (req) => {
     console.error('Error in edge function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to scrape tweets',
+        error: error.message || 'Failed to fetch tweets',
         details: error.stack,
         success: false
       }),
