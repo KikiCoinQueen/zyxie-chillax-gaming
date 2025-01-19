@@ -30,7 +30,7 @@ async function scrapeTweets(handle: string) {
 
     // Wait for tweets to load with a more specific selector
     console.log('Waiting for tweets to load...');
-    await page.waitForSelector('article[data-testid="tweet"]', { timeout: 60000 });
+    await page.waitForSelector('[data-testid="tweet"]', { timeout: 60000 });
 
     // Scroll a bit to load more tweets
     console.log('Scrolling to load more tweets...');
@@ -41,7 +41,7 @@ async function scrapeTweets(handle: string) {
 
     console.log('Extracting tweets...');
     const tweets = await page.evaluate(() => {
-      const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
+      const tweetElements = document.querySelectorAll('[data-testid="tweet"]');
       return Array.from(tweetElements).slice(0, 10).map(tweet => {
         const tweetText = tweet.querySelector('[data-testid="tweetText"]');
         if (!tweetText) return null;
@@ -54,17 +54,16 @@ async function scrapeTweets(handle: string) {
         return text.replace(/https?:\/\/\S+/g, '')
                   .replace(/\s+/g, ' ')
                   .trim();
-      });
+      }).filter(Boolean);
     });
 
-    const validTweets = tweets.filter(Boolean);
-    console.log(`Successfully scraped ${validTweets.length} tweets`);
+    console.log(`Successfully scraped ${tweets.length} tweets`);
     
-    if (validTweets.length === 0) {
+    if (tweets.length === 0) {
       throw new Error('No valid tweets found');
     }
     
-    return validTweets;
+    return tweets;
   } catch (error) {
     console.error('Error during scraping:', error);
     throw new Error(`Failed to scrape tweets: ${error.message}`);

@@ -83,7 +83,7 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
   return (
     <div className="space-y-4">
       <ApiDebugPanel 
-        apiUrl={`${supabase.functions.url}/analyze-twitter`}
+        apiUrl="https://jmswkirjyslohtefihpn.supabase.co/functions/v1/analyze-twitter"
         lastResponse={lastResponse}
         isLoading={isLoading}
         error={error}
