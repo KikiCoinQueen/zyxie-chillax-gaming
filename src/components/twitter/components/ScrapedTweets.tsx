@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TweetAnalysis } from "../types";
+import { ApiDebugPanel } from "@/components/debug/ApiDebugPanel";
 
 interface ScrapedTweetsProps {
   handle: string;
@@ -13,9 +14,13 @@ interface ScrapedTweetsProps {
 export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps) => {
   const [tweets, setTweets] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [lastResponse, setLastResponse] = useState<any>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const scrapeTweets = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       console.log("Scraping tweets for:", handle);
       const { data, error } = await supabase.functions.invoke<{
@@ -30,9 +35,12 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
       }
 
       setTweets(data.tweets);
+      setLastResponse(data);
+      setLastUpdated(new Date());
       toast.success(`Successfully scraped ${data.tweets.length} tweets`);
     } catch (error) {
       console.error("Error scraping tweets:", error);
+      setError(error as Error);
       toast.error("Failed to scrape tweets");
     } finally {
       setIsLoading(false);
@@ -46,6 +54,7 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase.functions.invoke<{
         tweets: TweetAnalysis[];
@@ -58,10 +67,13 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
         throw new Error('Analysis failed');
       }
 
+      setLastResponse(data);
+      setLastUpdated(new Date());
       onAnalysisComplete(data.tweets);
       toast.success("AI analysis completed!");
     } catch (error) {
       console.error("Error analyzing tweets:", error);
+      setError(error as Error);
       toast.error("Failed to analyze tweets");
     } finally {
       setIsLoading(false);
@@ -70,6 +82,14 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
 
   return (
     <div className="space-y-4">
+      <ApiDebugPanel 
+        apiUrl={`${supabase.functions.url}/analyze-twitter`}
+        lastResponse={lastResponse}
+        isLoading={isLoading}
+        error={error}
+        lastUpdated={lastUpdated}
+      />
+
       <div className="flex justify-between items-center">
         <Button 
           onClick={scrapeTweets} 
