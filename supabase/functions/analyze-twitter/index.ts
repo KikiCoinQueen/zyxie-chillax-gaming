@@ -8,7 +8,6 @@ interface TwitterAnalysisRequest {
 }
 
 async function scrapeTweets(handle: string) {
-  // Remove @ if present and clean the handle
   const cleanHandle = handle.replace('@', '').trim();
   
   console.log('Starting tweet scraping for:', cleanHandle);
@@ -25,48 +24,54 @@ async function scrapeTweets(handle: string) {
     
     await page.goto(twitterUrl, { 
       waitUntil: 'networkidle0',
-      timeout: 60000
+      timeout: 30000 // Reduced timeout
     });
 
-    // Wait for tweets to load with a more specific selector
+    // Check if we're on an error page
+    const errorSelector = '[data-testid="error-detail"]';
+    const hasError = await page.$(errorSelector);
+    if (hasError) {
+      const errorText = await page.evaluate(selector => {
+        const element = document.querySelector(selector);
+        return element ? element.textContent : '';
+      }, errorSelector);
+      throw new Error(`Twitter error: ${errorText || 'Account not found or private'}`);
+    }
+
+    // Wait for tweets to load
     console.log('Waiting for tweets to load...');
-    await page.waitForSelector('[data-testid="tweet"]', { timeout: 60000 });
+    await page.waitForSelector('[data-testid="tweet"]', { 
+      timeout: 30000 
+    }).catch(() => {
+      throw new Error('No tweets found - account might be private or not exist');
+    });
 
     // Scroll a bit to load more tweets
     console.log('Scrolling to load more tweets...');
     await page.evaluate(() => {
       window.scrollBy(0, 2000);
     });
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(2000);
 
     console.log('Extracting tweets...');
     const tweets = await page.evaluate(() => {
       const tweetElements = document.querySelectorAll('[data-testid="tweet"]');
       return Array.from(tweetElements).slice(0, 10).map(tweet => {
         const tweetText = tweet.querySelector('[data-testid="tweetText"]');
-        if (!tweetText) return null;
-        
-        // Clean up the text
-        const text = tweetText.textContent?.trim();
-        if (!text) return null;
-        
-        // Remove URLs and clean up whitespace
-        return text.replace(/https?:\/\/\S+/g, '')
-                  .replace(/\s+/g, ' ')
-                  .trim();
+        return tweetText?.textContent?.trim() || null;
       }).filter(Boolean);
     });
 
     console.log(`Successfully scraped ${tweets.length} tweets`);
     
     if (tweets.length === 0) {
-      throw new Error('No valid tweets found');
+      throw new Error('No tweets found');
     }
     
     return tweets;
   } catch (error) {
     console.error('Error during scraping:', error);
-    throw new Error(`Failed to scrape tweets: ${error.message}`);
+    throw error;
   } finally {
     console.log('Closing browser...');
     await browser.close();
@@ -74,7 +79,7 @@ async function scrapeTweets(handle: string) {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -83,7 +88,13 @@ Deno.serve(async (req) => {
     const { handle, scrapeOnly = false } = await req.json() as TwitterAnalysisRequest;
 
     if (!handle) {
-      throw new Error('Twitter handle is required');
+      return new Response(
+        JSON.stringify({ error: 'Twitter handle is required' }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     console.log(`Processing request for handle: ${handle}, scrapeOnly: ${scrapeOnly}`);
@@ -92,23 +103,20 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ tweets }),
       { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in edge function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error.message || 'Failed to scrape tweets',
         details: error.stack
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

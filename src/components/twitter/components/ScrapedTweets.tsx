@@ -17,31 +17,44 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
   const [error, setError] = useState<Error | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [status, setStatus] = useState<string>("");
+
+  const updateStatus = (message: string) => {
+    console.log(message);
+    setStatus(message);
+  };
 
   const scrapeTweets = async () => {
     setIsLoading(true);
     setError(null);
+    setTweets([]);
+    
     try {
-      console.log("Scraping tweets for:", handle);
+      updateStatus(`Starting tweet scraping for @${handle}...`);
+      
       const { data, error } = await supabase.functions.invoke<{
         tweets: string[];
+        error?: string;
       }>('analyze-twitter', {
         body: { handle, scrapeOnly: true }
       });
 
       if (error) throw error;
       if (!data?.tweets?.length) {
-        throw new Error('No tweets found');
+        throw new Error(data?.error || 'No tweets found');
       }
 
       setTweets(data.tweets);
       setLastResponse(data);
       setLastUpdated(new Date());
+      updateStatus(`Successfully scraped ${data.tweets.length} tweets`);
       toast.success(`Successfully scraped ${data.tweets.length} tweets`);
     } catch (error) {
       console.error("Error scraping tweets:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to scrape tweets';
       setError(error as Error);
-      toast.error("Failed to scrape tweets");
+      updateStatus(`Error: ${errorMessage}`);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +69,8 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
     setIsLoading(true);
     setError(null);
     try {
+      updateStatus("Starting AI analysis...");
+      
       const { data, error } = await supabase.functions.invoke<{
         tweets: TweetAnalysis[];
       }>('analyze-twitter', {
@@ -70,11 +85,14 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
       setLastResponse(data);
       setLastUpdated(new Date());
       onAnalysisComplete(data.tweets);
+      updateStatus("AI analysis completed successfully!");
       toast.success("AI analysis completed!");
     } catch (error) {
       console.error("Error analyzing tweets:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to analyze tweets';
       setError(error as Error);
-      toast.error("Failed to analyze tweets");
+      updateStatus(`Error: ${errorMessage}`);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +100,12 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
 
   return (
     <div className="space-y-4">
+      {status && (
+        <div className="text-sm font-mono text-primary animate-pulse">
+          {status}
+        </div>
+      )}
+      
       <ApiDebugPanel 
         apiUrl="https://jmswkirjyslohtefihpn.supabase.co/functions/v1/analyze-twitter"
         lastResponse={lastResponse}
