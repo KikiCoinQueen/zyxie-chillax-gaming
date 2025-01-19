@@ -24,7 +24,7 @@ async function scrapeTweets(handle: string) {
     
     await page.goto(twitterUrl, { 
       waitUntil: 'networkidle0',
-      timeout: 30000 // Reduced timeout
+      timeout: 15000 // Reduced timeout
     });
 
     // Check if we're on an error page
@@ -41,7 +41,7 @@ async function scrapeTweets(handle: string) {
     // Wait for tweets to load
     console.log('Waiting for tweets to load...');
     await page.waitForSelector('[data-testid="tweet"]', { 
-      timeout: 30000 
+      timeout: 10000 
     }).catch(() => {
       throw new Error('No tweets found - account might be private or not exist');
     });
@@ -49,9 +49,9 @@ async function scrapeTweets(handle: string) {
     // Scroll a bit to load more tweets
     console.log('Scrolling to load more tweets...');
     await page.evaluate(() => {
-      window.scrollBy(0, 2000);
+      window.scrollBy(0, 1000);
     });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
 
     console.log('Extracting tweets...');
     const tweets = await page.evaluate(() => {
@@ -73,8 +73,7 @@ async function scrapeTweets(handle: string) {
     console.error('Error during scraping:', error);
     throw error;
   } finally {
-    console.log('Closing browser...');
-    await browser.close();
+    await browser.close().catch(console.error);
   }
 }
 
@@ -101,7 +100,7 @@ Deno.serve(async (req) => {
     const tweets = await scrapeTweets(handle);
 
     return new Response(
-      JSON.stringify({ tweets }),
+      JSON.stringify({ tweets, success: true }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
@@ -112,10 +111,11 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Failed to scrape tweets',
-        details: error.stack
+        details: error.stack,
+        success: false
       }),
       {
-        status: 500,
+        status: 200, // Return 200 even for errors to avoid CORS issues
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

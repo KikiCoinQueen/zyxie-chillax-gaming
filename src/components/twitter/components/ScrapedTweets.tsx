@@ -35,18 +35,27 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
       const { data, error } = await supabase.functions.invoke<{
         tweets: string[];
         error?: string;
+        success: boolean;
       }>('analyze-twitter', {
         body: { handle, scrapeOnly: true }
       });
 
-      if (error) throw error;
+      setLastResponse(data);
+      setLastUpdated(new Date());
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to scrape tweets');
+      }
+
       if (!data?.tweets?.length) {
-        throw new Error(data?.error || 'No tweets found');
+        throw new Error('No tweets found');
       }
 
       setTweets(data.tweets);
-      setLastResponse(data);
-      setLastUpdated(new Date());
       updateStatus(`Successfully scraped ${data.tweets.length} tweets`);
       toast.success(`Successfully scraped ${data.tweets.length} tweets`);
     } catch (error) {
@@ -73,12 +82,13 @@ export const ScrapedTweets = ({ handle, onAnalysisComplete }: ScrapedTweetsProps
       
       const { data, error } = await supabase.functions.invoke<{
         tweets: TweetAnalysis[];
+        success: boolean;
       }>('analyze-twitter', {
         body: { handle, tweets }
       });
 
       if (error) throw error;
-      if (!data?.tweets) {
+      if (!data?.success || !data?.tweets) {
         throw new Error('Analysis failed');
       }
 
